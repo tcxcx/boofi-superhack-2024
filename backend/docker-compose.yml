@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    container_name: boofi_db
+    env_file:
+      - .env.docker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./
+    container_name: boofi_backend
+    depends_on:
+      - db
+    env_file:
+      - .env.docker
+    ports:
+      - "3001:3001"
+    command: sh -c "while ! pg_isready -h db -U boofi_user; do sleep 1; done && /docker-start.sh"
+
+volumes:
+  postgres_data:

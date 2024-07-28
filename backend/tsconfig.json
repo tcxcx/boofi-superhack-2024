@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "types": ["jest", "supertest", "node"]
+  },
+  "include": ["src/**/*", "src/**/*.test.ts"],
+  "exclude": ["node_modules"]
+}
