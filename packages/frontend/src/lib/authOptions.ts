@@ -1,7 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { validateJWT } from "@/lib/authHelpers";
-import exp from "constants";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,8 +10,8 @@ export const authOptions: NextAuthOptions = {
       type: "oauth",
       wellKnown: "https://id.worldcoin.org/.well-known/openid-configuration",
       authorization: { params: { scope: "openid" } },
-      clientId: process.env.WLD_CLIENT_ID,
-      clientSecret: process.env.WLD_CLIENT_SECRET,
+      clientId: process.env.NEXT_PUBLIC_WLD_APP_ID,
+      clientSecret: process.env.NEXT_WLD_CLIENT_SECRET,
       idToken: true,
       checks: ["state", "nonce", "pkce"],
       profile(profile) {
@@ -40,6 +39,7 @@ export const authOptions: NextAuthOptions = {
             id: jwtPayload.sub || "",
             name: jwtPayload.name || "",
             email: jwtPayload.email || "",
+            sessionLevel: 1,
           };
         }
         return null;
@@ -47,22 +47,32 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.userRole = "admin";
+      }
+
+      if (account && account.provider === "worldcoin") {
+        // WorldCoin device verification level gives is 2 sign in level - this could be changed in the future to use Orb instead
+        token.sessionLevel = 2;
+        token.worldcoinSub = user.id;
+        if (typeof account.access_token === "string") {
+          token.accessToken = account.access_token;
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.userRole = token.userRole;
-        session.user = {
-          ...session.user,
-          name: token.name,
-          email: token.email,
-          image: token.picture,
-        };
-      }
+      session.userRole = token.userRole;
+      session.sessionLevel = token.sessionLevel;
+      session.accessToken = token.accessToken;
+      session.user = {
+        ...session.user,
+        name: token.name,
+        email: token.email,
+        image: token.picture,
+        worldcoinSub: token.worldcoinSub,
+      };
       return session;
     },
   },

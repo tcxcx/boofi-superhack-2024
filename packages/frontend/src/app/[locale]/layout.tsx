@@ -1,5 +1,5 @@
 import "@/css/global.scss";
-
+import { cache } from "react";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
@@ -14,17 +14,24 @@ import Header from "@/components/Header";
 import Layout from "@/components/Layout";
 import Container from "@/components/Container";
 import { ThemeProvider } from "@/components/theme-provider";
+import { BackgroundGradientAnimation } from "@/components/background-gradient-animation";
+import { SessionProvider } from "@/lib/sessionProvider";
+import { IBM_Plex_Serif } from "@next/font/google";
 
 const GridDebugger = dynamic(() => import("@/lib/debug/grid-debugger"), {
   ssr: false,
 });
 
 const locales = ["en", "es", "pt"] as const;
+const ibmPlexSerif = IBM_Plex_Serif({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-ibm-plex-serif",
+});
 
 type Locale = (typeof locales)[number];
 
-function getMetadata(locale: string): Metadata {
-  // Validate that the incoming `locale` parameter is valid
+const getMetadata = cache((locale: string): Metadata => {
   if (!locales.includes(locale as Locale)) notFound();
 
   const safeLocale = locale as Locale;
@@ -101,7 +108,7 @@ function getMetadata(locale: string): Metadata {
       languages: Object.fromEntries(locales.map((l) => [l, `${siteURL}/${l}`])),
     },
   };
-}
+});
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -113,36 +120,37 @@ interface RootLayoutProps {
 export default async function RootLayout({
   children,
   params: { locale },
-}: Readonly<RootLayoutProps>) {
+}: RootLayoutProps) {
   const session = await getServerSession(authOptions);
 
   return (
     <html
       lang={locale}
-      className={`${GeistSans.variable} ${GeistMono.variable} h-full scroll-smooth antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexSerif.variable} h-full scroll-smooth antialiased`}
       suppressHydrationWarning
     >
       <body className="h-full">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
-          <Providers session={session}>
-            <main className="bg-gradient-to-b from-indigo-100 via-violet-100 to-purple-100 dark:from-indigo-100 dark:to-violet-200 dark:via-purple-200">
-              <Header />
-
-              <div className="mx-auto px-4 sm:px-8 lg:px-16 relative flex flex-col justify-center overflow-hidden">
-                <Container>
-                  {children}
-                  {isDev && <GridDebugger />}{" "}
-                </Container>
-              </div>
-              <Layout />
-            </main>
-            <Toaster />
-          </Providers>
+          <SessionProvider session={session}>
+            <Providers>
+              <main className="bg-gradient-to-b from-indigo-100 via-violet-100 to-purple-100 font-violet">
+                <Header />
+                <div className="mx-auto px-4 relative flex flex-col justify-center overflow-hidden">
+                  <Container>
+                    {children}
+                    {isDev && <GridDebugger />}
+                  </Container>
+                </div>
+                <Layout />
+              </main>
+              <Toaster />
+            </Providers>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

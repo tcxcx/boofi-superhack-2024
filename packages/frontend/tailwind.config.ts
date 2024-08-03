@@ -52,6 +52,18 @@ const config: Config = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        indigo: {
+          500: "#6172f3",
+          700: "#3538cd",
+        },
+        success: {
+          25: "#f6fef9",
+          50: "#ecfdf3",
+          100: "#d1fadf",
+          600: "#039855",
+          700: "#027a48",
+          900: "#054f31",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -81,6 +93,23 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      backgroundImage: {
+        "bank-gradient": "linear-gradient(90deg, #0179FE 0%, #4893FF 100%)",
+        "gradient-mesh": "url('/icons/gradient-mesh.svg')",
+        "bank-green-gradient":
+          "linear-gradient(90deg, #01797A 0%, #489399 100%)",
+      },
+      boxShadow: {
+        form: "0px 1px 2px 0px rgba(16, 24, 40, 0.05)",
+        chart:
+          "0px 1px 3px 0px rgba(16, 24, 40, 0.10), 0px 1px 2px 0px rgba(16, 24, 40, 0.06)",
+        profile:
+          "0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03)",
+        creditCard: "8px 10px 16px 0px rgba(0, 0, 0, 0.05)",
+      },
+      borderColor: {
+        bankGradient: "linear-gradient(90deg, #0179FE 0%, #4893FF 100%)",
+      },
       opacity: {
         2.5: "0.025",
         15: "0.15",
@@ -91,12 +120,23 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       zIndex: {
-        "100": "100",
+        100: "100",
       },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "shine-pulse": {
+          "0%": {
+            "background-position": "0% 0%",
+          },
+          "50%": {
+            "background-position": "100% 100%",
+          },
+          to: {
+            "background-position": "0% 0%",
+          },
         },
         "border-beam": {
           "100%": {
@@ -156,6 +196,39 @@ const config: Config = {
         marquee: {
           to: { transform: "translateX(-50%)" },
         },
+        moveHorizontal: {
+          "0%": {
+            transform: "translateX(-50%) translateY(-10%)",
+          },
+          "50%": {
+            transform: "translateX(50%) translateY(10%)",
+          },
+          "100%": {
+            transform: "translateX(-50%) translateY(-10%)",
+          },
+        },
+        moveInCircle: {
+          "0%": {
+            transform: "rotate(0deg)",
+          },
+          "50%": {
+            transform: "rotate(180deg)",
+          },
+          "100%": {
+            transform: "rotate(360deg)",
+          },
+        },
+        moveVertical: {
+          "0%": {
+            transform: "translateY(-50%)",
+          },
+          "50%": {
+            transform: "translateY(50%)",
+          },
+          "100%": {
+            transform: "translateY(-50%)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -166,8 +239,13 @@ const config: Config = {
         "accordion-up": "accordion-up 0.2s ease-out",
         spotlight: "spotlight 2s ease .75s 1 forwards",
         shimmer: "shimmer 8s infinite",
-        marquee: "marquee 30s linear infinite",
+        marquee: "marquee 10s linear infinite",
         aurora: "aurora 60s linear infinite",
+        first: "moveVertical 30s ease infinite",
+        second: "moveInCircle 20s reverse infinite",
+        third: "moveInCircle 40s linear infinite",
+        fourth: "moveHorizontal 40s ease infinite",
+        fifth: "moveInCircle 20s ease infinite",
       },
     },
   },

@@ -3,6 +3,9 @@
 import { HomeContent } from "@/components/Home";
 import { Translations } from "@/lib/types/translations";
 import { useTranslations } from "next-intl";
+import GridPattern from "@/components/magicui/grid-pattern";
+import { cn } from "@/utils";
+import Container from "@/components/Container";
 
 export default function Home() {
   const t = useTranslations("Home");
@@ -23,5 +26,20 @@ export default function Home() {
     matrixMemeAlt: t("matrixMemeAlt"),
   };
 
-  return <HomeContent translations={translations} />;
+  return (
+    <Container>
+      <div className="relative">
+        <GridPattern
+          width={20}
+          height={20}
+          x={-1}
+          y={-1}
+          className={cn(
+            "[mask-image:linear-gradient(to_bottom_right,white,transparent,transparent)]"
+          )}
+        />
+        <HomeContent translations={translations} />
+      </div>
+    </Container>
+  );
 }

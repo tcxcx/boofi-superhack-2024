@@ -1,8 +1,7 @@
 "use client";
-import { SessionProvider } from "next-auth/react";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
-import type { Session } from "next-auth";
 import { config } from "@/store/wagmi";
 import { BitcoinWalletConnectors } from "@dynamic-labs/bitcoin";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
@@ -13,22 +12,23 @@ import {
 } from "@dynamic-labs/sdk-react-core";
 import { APP_NAME, APP_LOGO_URL } from "@/lib/constants";
 import { getCsrfToken, getSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 import { Wallet, HandleConnectedWallet } from "@dynamic-labs/sdk-react-core";
 import {
   ExtendedUserProfile,
   ExtendedUserProfileWithSetProperties,
-  UserOnboardingFieldRequest,
 } from "@/lib/types/dynamic";
 
 const queryClient = new QueryClient();
 
 interface ProvidersProps {
   children?: React.ReactNode;
-  session: Session | null;
 }
 
-export const Providers = ({ children, session }: ProvidersProps) => {
+export const Providers = ({ children }: ProvidersProps) => {
+  const router = useRouter();
+
   const handleUserVerification = async (user: ExtendedUserProfile) => {
     if (!user.worldIdVerified || !user.plaidConnected) {
       // Set properties to indicate that verification is needed
@@ -75,47 +75,43 @@ export const Providers = ({ children, session }: ProvidersProps) => {
   };
 
   return (
-    <SessionProvider session={session}>
-      <DynamicContextProvider
-        settings={{
-          appName: APP_NAME,
-          appLogoUrl: APP_LOGO_URL,
-          environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID!,
-          walletConnectors: [EthereumWalletConnectors, BitcoinWalletConnectors],
-          handlers: {
-            handleConnectedWallet: (async (wallet: Wallet) => {
-              console.log("handleConnectedWallet was called", wallet);
-              // At this stage, we don't have access to the user object yet
-              // We'll return true to allow the connection process to continue
-              return false;
-            }) as HandleConnectedWallet,
+    <DynamicContextProvider
+      settings={{
+        appName: APP_NAME,
+        appLogoUrl: APP_LOGO_URL,
+        environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID!,
+        walletConnectors: [EthereumWalletConnectors, BitcoinWalletConnectors],
+        handlers: {
+          handleConnectedWallet: (async (wallet: Wallet) => {
+            console.log("handleConnectedWallet was called", wallet);
+            return false;
+          }) as HandleConnectedWallet,
 
-            handleVerifiedUser: async (args: { user: ExtendedUserProfile }) => {
-              console.log("handleVerifiedUser was called", args);
-              const user = args.user;
+          handleVerifiedUser: async (args: { user: ExtendedUserProfile }) => {
+            console.log("handleVerifiedUser was called", args);
+            const user = args.user;
 
-              const isVerified = await handleUserVerification(user);
-              if (isVerified) {
-                await handleSessionAuthentication(user);
-              } else {
-                console.log("User needs to complete verification");
-              }
-            },
+            const isVerified = await handleUserVerification(user);
+            if (isVerified) {
+              await handleSessionAuthentication(user);
+            } else {
+              console.log("User needs to complete verification");
+            }
           },
-          events: {
-            onAuthSuccess: async (event) => {
-              const user = event.user as ExtendedUserProfile;
-              console.log("Auth success, user:", user);
-            },
+        },
+        events: {
+          onAuthSuccess: async (event) => {
+            const user = event.user as ExtendedUserProfile;
+            console.log("Auth success, user:", user);
           },
-        }}
-      >
-        <WagmiProvider config={config}>
-          <QueryClientProvider client={queryClient}>
-            <DynamicWagmiConnector>{children}</DynamicWagmiConnector>
-          </QueryClientProvider>
-        </WagmiProvider>
-      </DynamicContextProvider>
-    </SessionProvider>
+        },
+      }}
+    >
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <DynamicWagmiConnector>{children}</DynamicWagmiConnector>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </DynamicContextProvider>
   );
 };
