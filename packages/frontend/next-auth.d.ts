@@ -12,6 +12,10 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       worldcoinSub?: string;
+      verificationStatus?: {
+        worldIdVerified: boolean;
+        plaidConnected?: boolean;
+      };
     };
   }
 }
@@ -22,6 +26,10 @@ declare module "next-auth/jwt" {
     sessionLevel?: number;
     worldcoinSub?: string;
     accessToken?: string;
+    verificationStatus?: {
+      worldIdVerified: boolean;
+      plaidConnected?: boolean;
+    };
   }
 }
 

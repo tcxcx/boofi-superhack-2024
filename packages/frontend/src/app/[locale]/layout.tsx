@@ -10,13 +10,12 @@ import { authOptions } from "@/lib/authOptions";
 import { isDev, siteURL } from "@/lib/constants";
 import { Providers } from "@/lib/providers";
 import { Toaster } from "@/components/ui/toaster";
-import Header from "@/components/Header";
 import Layout from "@/components/Layout";
-import Container from "@/components/Container";
 import { ThemeProvider } from "@/components/theme-provider";
-import { BackgroundGradientAnimation } from "@/components/background-gradient-animation";
 import { SessionProvider } from "@/lib/sessionProvider";
-import { IBM_Plex_Serif } from "@next/font/google";
+import { IBM_Plex_Serif, Inconsolata } from "@next/font/google";
+import GridPattern from "@/components/magicui/grid-pattern";
+import { cn } from "@/utils";
 
 const GridDebugger = dynamic(() => import("@/lib/debug/grid-debugger"), {
   ssr: false,
@@ -27,6 +26,12 @@ const ibmPlexSerif = IBM_Plex_Serif({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-ibm-plex-serif",
+});
+
+const inconsolata = Inconsolata({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-inconsolata",
 });
 
 type Locale = (typeof locales)[number];
@@ -126,7 +131,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexSerif.variable} h-full scroll-smooth antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${ibmPlexSerif.variable} ${inconsolata.variable} h-full scroll-smooth antialiased`}
       suppressHydrationWarning
     >
       <body className="h-full">
@@ -138,14 +143,18 @@ export default async function RootLayout({
         >
           <SessionProvider session={session}>
             <Providers>
-              <main className="bg-gradient-to-b from-indigo-100 via-violet-100 to-purple-100 font-violet">
-                <Header />
-                <div className="mx-auto px-4 relative flex flex-col justify-center overflow-hidden">
-                  <Container>
-                    {children}
-                    {isDev && <GridDebugger />}
-                  </Container>
-                </div>
+              <main className="bg-gradient-to-b from-indigo-100 via-violet-100 to-purple-100 font-violet darK:bg-transparent">
+                <GridPattern
+                  width={20}
+                  height={20}
+                  x={-1}
+                  y={-1}
+                  className={cn(
+                    "[mask-image:linear-gradient(to_bottom_right,white,transparent,transparent)]"
+                  )}
+                />
+                {children}
+                {isDev && <GridDebugger />}
                 <Layout />
               </main>
               <Toaster />

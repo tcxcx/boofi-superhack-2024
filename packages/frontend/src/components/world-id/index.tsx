@@ -10,6 +10,8 @@ import {
 } from "@worldcoin/idkit";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "next-intl";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { verifyWorldId } from "@/lib/actions/worldId.actions";
 
 // Define VerifyReply type locally
 type VerifyReply = {
@@ -18,12 +20,14 @@ type VerifyReply = {
 };
 
 interface UniqueProofIdProps {
+  userId: string | null;
   onStart: () => void;
   onVerified: () => void;
   onFailed: () => void;
 }
 
 const UniqueProofId: React.FC<UniqueProofIdProps> = ({
+  userId,
   onStart,
   onVerified,
   onFailed,
@@ -33,6 +37,7 @@ const UniqueProofId: React.FC<UniqueProofIdProps> = ({
 
   const appId = process.env.NEXT_PUBLIC_WLD_APP_ID as `app_${string}`;
   const action = process.env.NEXT_PUBLIC_WLD_ACTION;
+  const user = useDynamicContext().user?.userId;
 
   if (!appId || !action) {
     throw new Error("app_id or action is not set in environment variables!");
@@ -70,20 +75,19 @@ const UniqueProofId: React.FC<UniqueProofIdProps> = ({
     if (res.status === 200) {
       console.log("Successful response from backend:\n", data);
       await signIn("worldcoin", { redirect: false });
-      // For OIDC flow, TODO: update the session level in the database or set as state in the session
-      const updateSessionRes = await fetch("/api/worldid/update-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
 
-      if (updateSessionRes.ok) {
-        const { sessionLevel } = await updateSessionRes.json();
-        console.log("Session level updated:", sessionLevel);
-        onVerified();
-      } else {
-        setErrorMessage("Failed to update session level.");
+      try {
+        if (user) {
+          await verifyWorldId(result.verification_level, user);
+          console.log("World ID verification status updated in database");
+          onVerified();
+        } else {
+          setErrorMessage("User is undefined.");
+          onFailed();
+        }
+      } catch (err) {
+        setErrorMessage("Failed to update World ID verification status.");
+        console.error("Error updating World ID verification status:", err);
         onFailed();
       }
     } else {

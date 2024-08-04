@@ -2,6 +2,7 @@
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
+    "target": "es2015",
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -27,7 +28,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/store/dynamic.ts",
-    "src/components/user-button"
+    "src/components/user-button",
+    "src/components/grid-pattern/index.tsx",
+    "src/components/grid-pattern-linear-gradient/index.jsx"
   ],
   "exclude": ["node_modules"]
 }

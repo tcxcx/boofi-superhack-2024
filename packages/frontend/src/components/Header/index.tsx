@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import MobileMenu from "./mobile-menu";
@@ -9,20 +9,29 @@ import { ModeToggle } from "@/components/theme-toggle";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { WidgetContainer } from "../dynamic-content/WidgetContainer";
 import SparklesText from "@/components/magicui/sparkles-text";
-
+import { motion } from "framer-motion";
+import { Skeleton } from "../ui/skeleton";
 const Header: React.FC = () => {
   const { width } = useWindowSize();
+  const MotionLink = motion(Link);
 
   return (
     <header className="bg-transparent relative">
       <div className="container mx-auto grid grid-cols-3 items-center">
-        <div className="flex items-center">
-          <ModeToggle />
-          <LocalSwitcher />
+        <div className="flex items-center space-x-2">
+          <Suspense fallback={<Skeleton className="h-4 w-[250px]" />}>
+            <ModeToggle />
+            <LocalSwitcher />
+          </Suspense>
+
           <span className="h-px flex-1 bg-black"></span>
         </div>
         <div className="flex justify-center">
-          <Link href="/">
+          <MotionLink
+            href="/"
+            whileHover={{ scale: 1.15, rotate: 4 }}
+            whileTap={{ scale: 1.05, rotate: 2 }}
+          >
             <div className="flex items-center">
               <SparklesText>
                 <Image
@@ -33,11 +42,13 @@ const Header: React.FC = () => {
                 />
               </SparklesText>{" "}
             </div>
-          </Link>
+          </MotionLink>
         </div>
         <div className="flex items-center justify-end">
           <span className="h-px flex-grow bg-black"></span>
-          {width && width >= 1024 ? <WidgetContainer /> : <MobileMenu />}
+          <Suspense fallback={<Skeleton className="h-4 w-[250px]" />}>
+            {width && width >= 1024 ? <WidgetContainer /> : <MobileMenu />}
+          </Suspense>
         </div>
       </div>
     </header>

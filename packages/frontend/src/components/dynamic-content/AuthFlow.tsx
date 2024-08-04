@@ -1,9 +1,13 @@
-// src/components/dynamic-content/AuthFlow.tsx
-
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
-import { ExtendedUserProfile } from "@/lib/types/dynamic";
+import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
+import UniqueProofId from "../world-id";
+import { X, Check } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
+import { getUserVerificationStatus } from "@/lib/actions/worldId.actions";
+import PlaidLink from "@/components/bank/PlaidLink";
+import { CombinedUserProfile } from "@/lib/types/dynamic";
 
 enum AuthStep {
   Initial,
@@ -12,57 +16,137 @@ enum AuthStep {
   Complete,
 }
 
-export function AuthFlow() {
+interface AuthFlowProps {
+  needsVerification: boolean;
+  onWorldIdStart: () => void;
+  onWorldIdClose: (success: boolean) => void;
+  onPlaidStart: () => void;
+  onPlaidClose: (success: boolean) => void;
+  sessionLevel?: number;
+  isWorldIdVerifying: boolean;
+  isPlaidVerifying: boolean;
+}
+
+export function AuthFlow({
+  needsVerification,
+  isWorldIdVerifying,
+  isPlaidVerifying,
+  onPlaidStart,
+  onPlaidClose,
+  onWorldIdStart,
+  onWorldIdClose,
+  sessionLevel,
+}: AuthFlowProps) {
   const { user } = useDynamicContext();
   const [authStep, setAuthStep] = useState(AuthStep.Initial);
+  const [isWorldIdVerified, setIsWorldIdVerified] = useState(false);
+  const [isPlaidVerified, setIsPlaidVerified] = useState(false);
+  const router = useRouter();
+  const locale = useLocale();
+  const { setWorldIdVerifying, setPlaidVerifying, setVerified } =
+    useAuthStore();
 
   useEffect(() => {
-    if (user && (user as ExtendedUserProfile).newUser) {
+    async function fetchVerificationStatus() {
+      if (user?.userId) {
+        try {
+          const userData = await getUserVerificationStatus(user.userId);
+          setIsWorldIdVerified(userData?.worldIdVerified || false);
+          setIsPlaidVerified(userData?.connectedPlaidAccounts || false);
+          if (userData?.worldIdVerified && userData?.connectedPlaidAccounts) {
+            setVerified(true);
+          }
+        } catch (error) {
+          console.error("Error fetching user verification status:", error);
+          setIsWorldIdVerified(false);
+          setIsPlaidVerified(false);
+        }
+      }
+    }
+
+    fetchVerificationStatus();
+
+    if (user && needsVerification) {
       setAuthStep(AuthStep.WorldID);
     }
-  }, [user]);
+  }, [user, needsVerification, setVerified]);
 
-  const handleWorldIDComplete = () => {
-    setAuthStep(AuthStep.Plaid);
+  const handleWorldIDComplete = (success: boolean) => {
+    if (success) {
+      setAuthStep(AuthStep.Plaid);
+    } else {
+      setAuthStep(AuthStep.WorldID);
+    }
+    onWorldIdClose(success);
   };
 
-  const handlePlaidComplete = () => {
-    setAuthStep(AuthStep.Complete);
-  };
-
-  const renderAuthContent = () => {
-    switch (authStep) {
-      case AuthStep.WorldID:
-        return (
-          <div>
-            <h2>World ID Verification</h2>
-            <p>Please complete your World ID verification.</p>
-            {/* Add World ID verification component here */}
-            <Button onClick={handleWorldIDComplete}>Complete World ID</Button>
-          </div>
-        );
-      case AuthStep.Plaid:
-        return (
-          <div>
-            <h2>Connect Your Bank Account</h2>
-            <p>Please connect your bank account using Plaid.</p>
-            {/* Add Plaid connection component here */}
-            <Button onClick={handlePlaidComplete}>Connect Plaid</Button>
-          </div>
-        );
-      case AuthStep.Complete:
-        return (
-          <div>
-            <h2>Verification Complete</h2>
-            <p>Thank you for completing the verification process.</p>
-          </div>
-        );
-      default:
-        return null;
+  const handlePlaidComplete = (success: boolean) => {
+    onPlaidClose(success);
+    if (success) {
+      setAuthStep(AuthStep.Complete);
+      setVerified(true);
+    } else {
+      setAuthStep(AuthStep.Plaid);
     }
   };
 
-  return user && (user as ExtendedUserProfile).newUser
-    ? renderAuthContent()
-    : null;
+  const renderVerificationStatus = (
+    isVerified: boolean,
+    label: string,
+    action: React.ReactNode
+  ) => (
+    <div className="flex items-center justify-between w-full">
+      <div className="flex items-center space-x-2">
+        {isVerified ? (
+          <Check className="text-green-500" size={16} />
+        ) : (
+          <X className="text-red-500" size={16} />
+        )}
+        <span className="text-xs text-blue-900/60">
+          {label} {isVerified ? "verified" : "not verified"}
+        </span>
+      </div>
+      {!isVerified && action}
+    </div>
+  );
+
+  const renderAuthContent = () => {
+    return (
+      <div className="space-y-2 mx-6 text-xs">
+        {renderVerificationStatus(
+          isWorldIdVerified,
+          "World ID",
+          !isWorldIdVerified && (
+            <UniqueProofId
+              userId={user?.userId ?? null}
+              onStart={onWorldIdStart}
+              onVerified={() => handleWorldIDComplete(true)}
+              onFailed={() => handleWorldIDComplete(false)}
+            />
+          )
+        )}
+        <div className="z-100">
+          {renderVerificationStatus(
+            isPlaidVerified,
+            "Plaid",
+            !isPlaidVerified && (
+              <PlaidLink
+                user={user as CombinedUserProfile}
+                variant="outline"
+                onStart={onPlaidStart}
+                onVerified={() => handlePlaidComplete(true)}
+                onFailed={() => handlePlaidComplete(false)}
+              />
+            )
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="border-b border-gray-200 pb-4 mb-4">
+      {renderAuthContent()}
+    </div>
+  );
 }

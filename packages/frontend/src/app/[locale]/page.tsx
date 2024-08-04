@@ -1,10 +1,8 @@
-// src/app/[locale]/page.tsx
-
 import { HomeContent } from "@/components/Home";
 import { Translations } from "@/lib/types/translations";
 import { useTranslations } from "next-intl";
-import GridPattern from "@/components/magicui/grid-pattern";
-import { cn } from "@/utils";
+import Header from "@/components/Header";
+
 import Container from "@/components/Container";
 
 export default function Home() {
@@ -27,19 +25,16 @@ export default function Home() {
   };
 
   return (
-    <Container>
-      <div className="relative">
-        <GridPattern
-          width={20}
-          height={20}
-          x={-1}
-          y={-1}
-          className={cn(
-            "[mask-image:linear-gradient(to_bottom_right,white,transparent,transparent)]"
-          )}
-        />
-        <HomeContent translations={translations} />
+    <>
+      <Header />
+
+      <div className="mx-auto px-4 relative flex flex-col justify-center overflow-hidden">
+        <Container>
+          <div className="relative">
+            <HomeContent translations={translations} />
+          </div>
+        </Container>
       </div>
-    </Container>
+    </>
   );
 }

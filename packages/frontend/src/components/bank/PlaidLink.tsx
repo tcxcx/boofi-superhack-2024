@@ -5,38 +5,63 @@ import {
   PlaidLinkOptions,
   usePlaidLink,
 } from "react-plaid-link";
-import { useRouter } from "next/navigation";
 import {
   createLinkToken,
   exchangePublicToken,
 } from "@/lib/actions/user.actions";
 import Image from "next/image";
+import { CombinedUserProfile } from "@/lib/types/dynamic";
+import { useAppwriteUser } from "@/hooks/use-fetch-user";
+import { useAuthStore } from "@/store/authStore";
+import Spinner from "../ui/spinner";
+import { updateUserPlaidStatus } from "@/lib/actions/user.actions";
 
-const PlaidLink = ({ user, variant }: PlaidLinkProps) => {
-  const router = useRouter();
+interface PlaidLinkProps {
+  user: CombinedUserProfile;
+  variant?: "primary" | "ghost" | "outline";
+  onStart?: () => void;
+  onVerified?: () => void;
+  onFailed?: () => void;
+}
 
+const PlaidLink = ({
+  user,
+  variant,
+  onStart,
+  onVerified,
+  onFailed,
+}: PlaidLinkProps) => {
   const [token, setToken] = useState("");
+  const userId = user.userId;
+  const { appwriteUser, loading, error } = useAppwriteUser(userId);
+  const { setPlaidPortalOpen } = useAuthStore();
 
   useEffect(() => {
     const getLinkToken = async () => {
-      const data = await createLinkToken(user);
-
-      setToken(data?.linkToken);
+      if (appwriteUser) {
+        const data = await createLinkToken(appwriteUser);
+        setToken(data?.linkToken);
+      }
     };
 
-    getLinkToken();
-  }, [user]);
+    if (appwriteUser) {
+      getLinkToken();
+    }
+  }, [appwriteUser]);
 
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (public_token: string) => {
-      await exchangePublicToken({
-        publicToken: public_token,
-        user,
-      });
-
-      router.push("/");
+      if (appwriteUser) {
+        await exchangePublicToken({
+          publicToken: public_token,
+          user: appwriteUser,
+        });
+        await updateUserPlaidStatus(appwriteUser.$id, true);
+        setPlaidPortalOpen(false);
+        if (onVerified) onVerified();
+      }
     },
-    [user]
+    [appwriteUser, onVerified, setPlaidPortalOpen]
   );
 
   const config: PlaidLinkOptions = {
@@ -46,20 +71,36 @@ const PlaidLink = ({ user, variant }: PlaidLinkProps) => {
 
   const { open, ready } = usePlaidLink(config);
 
+  const handleClick = () => {
+    if (onStart) onStart();
+    setPlaidPortalOpen(true);
+    open();
+  };
+
+  if (loading) {
+    return <Spinner />;
+  }
+
+  if (error) {
+    console.error("Error fetching user:", error);
+    if (onFailed) onFailed();
+    return <Button disabled>Error: Unable to connect bank</Button>;
+  }
   return (
     <>
       {variant === "primary" ? (
         <Button
-          onClick={() => open()}
-          disabled={!ready}
+          onClick={handleClick}
+          disabled={!ready || !appwriteUser}
           className="plaidlink-primary"
         >
           Connect bank
         </Button>
       ) : variant === "ghost" ? (
         <Button
-          onClick={() => open()}
+          onClick={handleClick}
           variant="ghost"
+          disabled={!ready || !appwriteUser}
           className="plaidlink-ghost"
         >
           <Image
@@ -72,8 +113,22 @@ const PlaidLink = ({ user, variant }: PlaidLinkProps) => {
             Connect bank
           </p>
         </Button>
+      ) : variant === "outline" ? (
+        <Button
+          onClick={handleClick}
+          variant="outline"
+          size={"xs"}
+          disabled={!ready || !appwriteUser}
+          className="text-blue-900/60"
+        >
+          Connect bank
+        </Button>
       ) : (
-        <Button onClick={() => open()} className="plaidlink-default">
+        <Button
+          onClick={handleClick}
+          disabled={!ready || !appwriteUser}
+          className="plaidlink-default"
+        >
           <Image
             src="/icons/connect-bank.svg"
             alt="connect bank"
