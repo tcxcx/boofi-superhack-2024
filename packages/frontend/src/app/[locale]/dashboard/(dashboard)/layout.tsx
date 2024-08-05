@@ -4,6 +4,12 @@ import DashboardSidebar from "@/components/bank/DashboardSidebar";
 import GridPattern from "@/components/magicui/grid-pattern";
 import { cn } from "@/utils";
 import AltContainer from "@/components/Container/alternate-bg";
+import WalletHeader from "@/components/dashboard/wallet-header";
+import {
+  useDynamicContext,
+  useIsLoggedIn,
+  DynamicNav,
+} from "@dynamic-labs/sdk-react-core";
 
 export default function DashboardLayout({
   children,
@@ -38,6 +44,7 @@ export default function DashboardLayout({
             "absolute inset-0 [mask-image:linear-gradient(to_bottom_right,black,transparent,transparent)]"
           )}
         />
+        <WalletHeader />
         <div className="flex-grow overflow-auto z-10">{children}</div>
       </div>
     </div>

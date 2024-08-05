@@ -26,6 +26,7 @@ declare type LoginUser = {
 };
 
 declare type User = {
+  ens: any;
   id: string;
   $id: string;
   email: string;
@@ -56,6 +57,14 @@ declare type Account = {
   subtype: string;
   appwriteItemId: string;
   shareableId: string;
+};
+
+declare type ChainBalances = {
+  [key: string]: {
+    chainName: string;
+    tokens: any[];
+    totalUSD: number;
+  };
 };
 
 declare type Transaction = {
@@ -202,6 +211,8 @@ declare interface TotalBalanceBoxProps {
   accounts: Account[];
   totalBanks: number;
   totalCurrentBalance: number;
+  chainBalances: ChainBalances;
+  totalBalanceUSD: number;
 }
 
 declare interface FooterProps {
@@ -246,6 +257,7 @@ declare interface CategoryProps {
 
 declare interface DoughnutChartProps {
   accounts: Account[];
+  chainBalances: ChainBalances;
 }
 
 declare interface PaymentTransferFormProps {

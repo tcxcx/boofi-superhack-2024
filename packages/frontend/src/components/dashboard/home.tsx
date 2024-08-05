@@ -1,5 +1,3 @@
-// /home/tcxcx/coding_projects/template-hackathon-2024/src/components/dashboard/home.tsx
-
 import { useEffect, useState, useCallback } from "react";
 import HeaderBox from "@/components/bank/HeaderBox";
 import RecentTransactions from "@/components/bank/RecentTransactions";
@@ -8,6 +6,8 @@ import TotalBalanceBox from "@/components/bank/TotalBalanceBox";
 import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
 import { CombinedUserProfile } from "@/lib/types/dynamic";
 import { ErrorBoundary } from "react-error-boundary";
+import { useTokenBalances } from "@dynamic-labs/sdk-react-core";
+import { calculateChainBalances } from "@/utils/multiChainBalance";
 
 interface SearchParamProps {
   userId: string;
@@ -53,6 +53,10 @@ const Home = ({
   console.log("Home Component Accounts:", accounts);
   console.log("Home Component Only Accounts:", account);
 
+  const { tokenBalances } = useTokenBalances();
+  const { chainBalances, totalBalanceUSD } =
+    calculateChainBalances(tokenBalances);
+
   if (error) {
     return <div>Error: {error.message}</div>;
   }
@@ -86,6 +90,8 @@ const Home = ({
             accounts={accounts.data}
             totalBanks={accounts.totalBanks}
             totalCurrentBalance={accounts.totalCurrentBalance}
+            chainBalances={chainBalances}
+            totalBalanceUSD={totalBalanceUSD}
           />
         </header>
 
@@ -99,7 +105,7 @@ const Home = ({
       </div>
       <ErrorBoundary fallback={<div>Something went wrong</div>}>
         <RightSidebar
-          user={user}
+          user={{ ...user, ens: user.ens || "" }}
           transactions={account?.transactions}
           banks={accounts.data?.slice(0, 2)}
         />

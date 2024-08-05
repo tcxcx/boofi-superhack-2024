@@ -34,7 +34,7 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
       <button
         onClick={toggleSidebar}
         className={cn(
-          "fixed top-4 right-4 z-50 p-2 group bg-gradient-to-br animate-shimmer from-indigo-200 via-cyan-200 to-purple-300 hover:text-accent-foreground active:text-opacity-75 rounded-full shadow-md",
+          "fixed top-16 hover:animate-pulse right-12 z-50 p-2 group bg-gradient-to-br animate-shimmer from-indigo-200 via-cyan-200 to-purple-300 hover:text-accent-foreground text-cyan-900 dark:text-primary active:text-opacity-75 rounded-full shadow-md",
           isExpanded ? "hidden" : "block"
         )}
       >
@@ -42,7 +42,7 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
       </button>
       <aside
         className={cn(
-          "no-scrollbar h-screen max-h-screen flex-col border-l border-gray-200 xl:overflow-y-scroll transition-all duration-300",
+          "no-scrollbar h-screen max-h-screen flex-col border-l border-gray-200 dark:border-white xl:overflow-y-scroll transition-all duration-300",
           isExpanded ? "w-[355px]" : "w-0 overflow-hidden"
         )}
       >
@@ -51,16 +51,26 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
             <div className="profile-banner relative">
               <button
                 onClick={toggleSidebar}
-                className="absolute top-2 right-2 text-white hover:text-gray-700 dark:hover:text-white"
+                className="absolute bottom-2 left-2 text-white hover:text-gray-700 dark:hover:text-white"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
             </div>
             <div className="profile">
               <div className="profile-img">
-                <span className="text-5xl font-bold text-blue-500">
-                  {user.firstName ? user.firstName[0] : ""}
-                </span>
+                {user.ens?.avatar ? (
+                  <Image
+                    src={user.ens.avatar}
+                    alt="ENS Avatar"
+                    width={40}
+                    height={40}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <span className="text-5xl font-bold text-indigo-400 dark:text-primary">
+                    {user.firstName ? user.firstName[0] : ""}
+                  </span>
+                )}
               </div>
 
               <div className="profile-details">
@@ -115,7 +125,7 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
               {categories.length > 0 && (
                 <BlurFade delay={0.2} inView>
                   <div className="mt-10 flex flex-1 flex-col gap-6">
-                    <h2 className="header-2">Top categories</h2>
+                    <h2 className="header-2">Top Spending Categories</h2>
 
                     <div className="space-y-5">
                       {categories.map((category, index) => (
