@@ -41,8 +41,6 @@ export function AuthFlow({
   const [authStep, setAuthStep] = useState(AuthStep.Initial);
   const [isWorldIdVerified, setIsWorldIdVerified] = useState(false);
   const [isPlaidVerified, setIsPlaidVerified] = useState(false);
-  const router = useRouter();
-  const locale = useLocale();
   const { setWorldIdVerifying, setPlaidVerifying, setVerified } =
     useAuthStore();
 

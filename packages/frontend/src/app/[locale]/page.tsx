@@ -2,7 +2,6 @@ import { HomeContent } from "@/components/Home";
 import { Translations } from "@/lib/types/translations";
 import { useTranslations } from "next-intl";
 import Header from "@/components/Header";
-
 import Container from "@/components/Container";
 
 export default function Home() {

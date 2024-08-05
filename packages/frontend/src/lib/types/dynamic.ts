@@ -13,6 +13,7 @@ export interface User {
 
 export interface CombinedUserProfile extends DynamicUserProfile {
   $id: string;
+  userId: string;
   id: string;
   email: string;
   firstName: string;

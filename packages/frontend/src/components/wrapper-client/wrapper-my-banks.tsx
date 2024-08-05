@@ -1,32 +1,36 @@
 "use client";
 
-import Home from "@/components/dashboard/home";
+import React from "react";
 import { useAppwriteUser } from "@/hooks/use-fetch-user";
+import MyBanks from "@/components/dashboard/my-banks";
 import { CombinedUserProfile } from "@/lib/types/dynamic";
-import HomeSkeleton from "@/components/dashboard/skeleton/home-skeleton";
+import MyBanksSkeleton from "@/components/dashboard/skeleton/my-banks-skeleton";
 
 interface WrapperProps {
   searchParams: {
     userId: string;
-    page: string;
   };
 }
 
-const Wrapper = ({ searchParams }: WrapperProps) => {
+const WrapperMyBanks = ({ searchParams }: WrapperProps) => {
   const { userId } = searchParams;
   const { appwriteUser: user, loading, error } = useAppwriteUser(userId);
 
-  console.log("User ID:", userId);
-  console.log("User:", user);
-
   if (loading) {
-    return <HomeSkeleton />;
+    return <MyBanksSkeleton />;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  if (!user) {
+    return <div>No user found</div>;
   }
 
   return (
-    <Home
+    <MyBanks
       userId={userId}
-      searchParams={searchParams}
       user={user as CombinedUserProfile}
       loading={loading}
       error={error}
@@ -34,4 +38,4 @@ const Wrapper = ({ searchParams }: WrapperProps) => {
   );
 };
 
-export default Wrapper;
+export default WrapperMyBanks;

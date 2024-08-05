@@ -14,9 +14,8 @@ import { cn } from "@/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Footer from "./Footer";
 
-const MobileNav = ({ user }: MobileNavProps) => {
+const MobileNav = (props: any) => {
   const pathname = usePathname();
 
   return (
@@ -37,13 +36,13 @@ const MobileNav = ({ user }: MobileNavProps) => {
             className="cursor-pointer flex items-center gap-1 px-4"
           >
             <Image
-              src="/icons/logo.svg"
+              src="/images/BooFi-icon.png"
               width={34}
               height={34}
-              alt="Horizon logo"
+              alt="BooFi logo"
             />
             <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">
-              Horizon
+              BooFi
             </h1>
           </Link>
           <div className="mobilenav-sheet">
@@ -60,7 +59,7 @@ const MobileNav = ({ user }: MobileNavProps) => {
                         href={item.route}
                         key={item.label}
                         className={cn("mobilenav-sheet_close w-full", {
-                          "bg-bank-gradient": isActive,
+                          "bank-gradient": isActive,
                         })}
                       >
                         <Image
@@ -83,11 +82,8 @@ const MobileNav = ({ user }: MobileNavProps) => {
                     </SheetClose>
                   );
                 })}
-                USER
               </nav>
             </SheetClose>
-
-            <Footer user={user} type="mobile" />
           </div>
         </SheetContent>
       </Sheet>

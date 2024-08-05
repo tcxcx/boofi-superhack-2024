@@ -143,7 +143,7 @@ export default async function RootLayout({
         >
           <SessionProvider session={session}>
             <Providers>
-              <main className="bg-gradient-to-b from-indigo-100 via-violet-100 to-purple-100 font-violet darK:bg-transparent">
+              <main className="bg-gradient-to-br from-indigo-100 via-violet-100 to-purple-100 font-violet dark:bg-transparent">
                 <GridPattern
                   width={20}
                   height={20}

@@ -1,8 +1,8 @@
-import Image from "next/image";
+// src/components/bank/Category.tsx
 
+import Image from "next/image";
 import { topCategoryStyles } from "@/lib/constants";
 import { cn } from "@/utils";
-
 import { Progress } from "@/components/ui/progress";
 
 const Category = ({ category }: CategoryProps) => {
@@ -28,7 +28,7 @@ const Category = ({ category }: CategoryProps) => {
         <Progress
           value={(category.count / category.totalCount) * 100}
           className={cn("h-2 w-full", progressBg)}
-          indicatorClassName={cn("h-2 w-full", indicator)}
+          // indicatorClassName={indicator}
         />
       </div>
     </div>

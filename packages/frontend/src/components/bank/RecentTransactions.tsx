@@ -4,15 +4,28 @@ import { BankTabItem } from "./BankTabItem";
 import BankInfo from "./BankInfo";
 import TransactionsTable from "./TransactionsTable";
 import { Pagination } from "./Pagination";
+import BlurFade from "../magicui/blur-fade";
+
+interface RecentTransactionsProps {
+  accounts: Account[];
+  transactions: Transaction[];
+  appwriteItemId: string;
+  page: number;
+  userId: string;
+}
 
 const RecentTransactions = ({
   accounts,
   transactions = [],
   appwriteItemId,
   page = 1,
+  userId,
 }: RecentTransactionsProps) => {
   const rowsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / rowsPerPage);
+
+  console.log("appwriteItemId in view all:", appwriteItemId);
+  console.log("userId in view all:", userId);
 
   const indexOfLastTransaction = page * rowsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - rowsPerPage;
@@ -27,7 +40,7 @@ const RecentTransactions = ({
       <header className="flex items-center justify-between">
         <h2 className="recent-transactions-label">Recent transactions</h2>
         <Link
-          href={`/transaction-history/?id=${appwriteItemId}`}
+          href={`/dashboard/transaction-history?id=${appwriteItemId}&userId=${userId}`}
           className="view-all-btn"
         >
           View all

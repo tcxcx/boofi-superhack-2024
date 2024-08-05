@@ -1,31 +1,17 @@
-import HeaderBox from '@/components/HeaderBox'
-import PaymentTransferForm from '@/components/PaymentTransferForm'
-import { getAccounts } from '@/lib/actions/bank.actions';
-import { getLoggedInUser } from '@/lib/actions/user.actions';
-import React from 'react'
+// /src/app/[locale]/dashboard/(dashboard)/payment-transfer/page.tsx
 
-const Transfer = async () => {
-  const loggedIn = await getLoggedInUser();
-  const accounts = await getAccounts({ 
-    userId: loggedIn.$id 
-  })
+import WrapperPaymentTransfer from "@/components/wrapper-client/wrapper-payment-transfer";
 
-  if(!accounts) return;
-  
-  const accountsData = accounts?.data;
-
-  return (
-    <section className="payment-transfer">
-      <HeaderBox 
-        title="Payment Transfer"
-        subtext="Please provide any specific details or notes related to the payment transfer"
-      />
-
-      <section className="size-full pt-5">
-        <PaymentTransferForm accounts={accountsData} />
-      </section>
-    </section>
-  )
+interface PageProps {
+  searchParams: {
+    userId: string;
+    page: string;
+    id?: string;
+  };
 }
 
-export default Transfer
+const Page = ({ searchParams }: PageProps) => {
+  return <WrapperPaymentTransfer searchParams={searchParams} />;
+};
+
+export default Page;

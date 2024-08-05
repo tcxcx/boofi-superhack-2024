@@ -9,6 +9,7 @@ import { DynamicWagmiConnector } from "@dynamic-labs/wagmi-connector";
 import {
   DynamicContextProvider,
   getAuthToken,
+  UserProfile,
 } from "@dynamic-labs/sdk-react-core";
 import { APP_NAME, APP_LOGO_URL } from "@/lib/constants";
 import { getCsrfToken, getSession } from "next-auth/react";
@@ -16,9 +17,10 @@ import { useRouter } from "next/navigation";
 
 import { Wallet, HandleConnectedWallet } from "@dynamic-labs/sdk-react-core";
 import {
-  ExtendedUserProfile,
-  ExtendedUserProfileWithSetProperties,
+  CombinedUserProfile,
+  CombinedUserProfileWithSetProperties,
 } from "@/lib/types/dynamic";
+import { useAuthStore } from "@/store/authStore";
 
 const queryClient = new QueryClient();
 
@@ -28,12 +30,13 @@ interface ProvidersProps {
 
 export const Providers = ({ children }: ProvidersProps) => {
   const router = useRouter();
+  const setUserId = useAuthStore((state) => state.setUserId);
 
-  const handleUserVerification = async (user: ExtendedUserProfile) => {
+  const handleUserVerification = async (user: CombinedUserProfile) => {
     if (!user.worldIdVerified || !user.plaidConnected) {
       // Set properties to indicate that verification is needed
       if ("setProperties" in user) {
-        await (user as ExtendedUserProfileWithSetProperties).setProperties({
+        await (user as CombinedUserProfileWithSetProperties).setProperties({
           worldIdVerified: user.worldIdVerified || false,
           plaidConnected: user.plaidConnected || false,
           kycVerificationNeeded: true,
@@ -44,7 +47,7 @@ export const Providers = ({ children }: ProvidersProps) => {
     return true;
   };
 
-  const handleSessionAuthentication = async (user: ExtendedUserProfile) => {
+  const handleSessionAuthentication = async (user: CombinedUserProfile) => {
     const authToken = getAuthToken();
     const csrfToken = await getCsrfToken();
     if (!csrfToken) {
@@ -87,9 +90,9 @@ export const Providers = ({ children }: ProvidersProps) => {
             return false;
           }) as HandleConnectedWallet,
 
-          handleVerifiedUser: async (args: { user: ExtendedUserProfile }) => {
+          handleVerifiedUser: async (args: { user: UserProfile }) => {
             console.log("handleVerifiedUser was called", args);
-            const user = args.user;
+            const user = args.user as CombinedUserProfile;
 
             const isVerified = await handleUserVerification(user);
             if (isVerified) {
@@ -101,8 +104,9 @@ export const Providers = ({ children }: ProvidersProps) => {
         },
         events: {
           onAuthSuccess: async (event) => {
-            const user = event.user as ExtendedUserProfile;
+            const user = event.user as CombinedUserProfile;
             console.log("Auth success, user:", user);
+            setUserId(user.id);
           },
         },
       }}

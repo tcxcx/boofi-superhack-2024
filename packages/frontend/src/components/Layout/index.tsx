@@ -5,27 +5,27 @@ import Footer from "@/components/Footer";
 
 const songs = [
   {
-    name: "Cyberfunk - FSM TEAM & < e s c p >",
+    name: " Cyberfunk - FSM TEAM & < e s c p > 👻",
     src: "/audio/lofi-cyberfunk.mp3",
   },
   {
-    name: "Light Rain - FSM TEAM & < e s c p >",
-    src: "/audio/lofi-lightrain.mp3",
+    name: " Light Rain - FSM TEAM & < e s c p > 👻",
+    src: "/audio/lofi-light-rain.mp3",
   },
   {
-    name: "Lucid Dreaming - FSM TEAM & < e s c p >",
+    name: " Lucid Dreaming - FSM TEAM & < e s c p > 👻",
     src: "/audio/lofi-lucid-dreaming.mp3",
   },
   {
-    name: "Lunar Leisure - FSM TEAM & < e s c p >",
+    name: " Lunar Leisure - FSM TEAM & < e s c p > 👻",
     src: "/audio/lofi-lunar-leisure.mp3",
   },
   {
-    name: "Midnight Room - FSM TEAM & < e s c p >",
+    name: " Midnight Room - FSM TEAM & < e s c p > 👻",
     src: "/audio/lofi-midnight-room-5.mp3",
   },
   {
-    name: "Reminiscence - FSM TEAM & < e s c p >",
+    name: " Reminiscence - FSM TEAM & < e s c p > 👻",
     src: "/audio/lofi-reminiscence.mp3",
   },
   { name: "Lofi Song 7 - FSM TEAM & < e s c p >", src: "/audio/lofi-song.mp3" },

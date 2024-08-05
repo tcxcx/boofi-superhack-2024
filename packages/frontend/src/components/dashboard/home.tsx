@@ -7,7 +7,8 @@ import RightSidebar from "@/components/bank/RightSidebar";
 import TotalBalanceBox from "@/components/bank/TotalBalanceBox";
 import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
 import { CombinedUserProfile } from "@/lib/types/dynamic";
-import Container from "../Container";
+import { ErrorBoundary } from "react-error-boundary";
+
 interface SearchParamProps {
   userId: string;
   searchParams: {
@@ -49,10 +50,8 @@ const Home = ({
 
   console.log("Home Component User ID:", userId);
   console.log("Home Component User:", user);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  console.log("Home Component Accounts:", accounts);
+  console.log("Home Component Only Accounts:", account);
 
   if (error) {
     return <div>Error: {error.message}</div>;
@@ -68,7 +67,10 @@ const Home = ({
 
   console.log("Array of Accounts Data:", accounts?.data);
   console.log("Simple Account Data:", account);
-
+  console.log(
+    "Appwrite passed as props from Home:",
+    account?.data?.appwriteItemId
+  );
   return (
     <section className="home">
       <div className="home-content">
@@ -90,16 +92,18 @@ const Home = ({
         <RecentTransactions
           accounts={accounts.data}
           transactions={account?.transactions}
-          appwriteItemId={account?.appwriteItemId}
+          appwriteItemId={account?.data?.appwriteItemId}
           page={currentPage}
+          userId={userId}
         />
       </div>
-
-      <RightSidebar
-        user={user}
-        transactions={account?.transactions}
-        banks={accounts.data?.slice(0, 2)}
-      />
+      <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <RightSidebar
+          user={user}
+          transactions={account?.transactions}
+          banks={accounts.data?.slice(0, 2)}
+        />
+      </ErrorBoundary>
     </section>
   );
 };
