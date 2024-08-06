@@ -83,7 +83,11 @@ export const Providers = ({ children }: ProvidersProps) => {
         appName: APP_NAME,
         appLogoUrl: APP_LOGO_URL,
         environmentId: process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID!,
+
         walletConnectors: [EthereumWalletConnectors, BitcoinWalletConnectors],
+        recommendedWallets: [
+          { walletKey: "coinbaseWallet", label: "Coinbase Wallet" },
+        ],
         handlers: {
           handleConnectedWallet: (async (wallet: Wallet) => {
             console.log("handleConnectedWallet was called", wallet);

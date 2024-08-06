@@ -5,6 +5,7 @@ import { useTokenBalances } from "@dynamic-labs/sdk-react-core";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AttestationDialog } from "./AttestationDialog";
 
 const TotalBalanceBox = ({
   accounts = [],
@@ -71,12 +72,8 @@ const TotalBalanceBox = ({
                   Get your credit score and financial attestation to unlock
                   potential loan opportunities.
                 </p>
-                <Button
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={handleGetScore}
-                >
-                  Get Credit Score
-                </Button>
+
+                <AttestationDialog buttonText="Get Credit Score" />
               </div>
             ) : (
               <>
@@ -90,12 +87,7 @@ const TotalBalanceBox = ({
                       Credit Score
                     </div>
                   </div>
-                  <Button
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={handleGetScore}
-                  >
-                    {creditScore ? "Update Score" : "Get Credit Score"}
-                  </Button>
+                  <AttestationDialog buttonText="Update Score" />
                 </div>
                 <div className="flex justify-between items-center space-x-6">
                   <div>

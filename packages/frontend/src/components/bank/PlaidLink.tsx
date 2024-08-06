@@ -16,8 +16,11 @@ import { useAuthStore } from "@/store/authStore";
 import Spinner from "../ui/spinner";
 import { updateUserPlaidStatus } from "@/lib/actions/user.actions";
 
+// Define the RequiredEnsUser type
+type RequiredEnsUser = CombinedUserProfile & { ens: any };
+
 interface PlaidLinkProps {
-  user: CombinedUserProfile;
+  user: RequiredEnsUser;
   variant?: "primary" | "ghost" | "outline";
   onStart?: () => void;
   onVerified?: () => void;
@@ -41,7 +44,7 @@ const PlaidLink = ({
   useEffect(() => {
     const getLinkToken = async () => {
       if (appwriteUser) {
-        const data = await createLinkToken(appwriteUser);
+        const data = await createLinkToken(appwriteUser as RequiredEnsUser);
         setToken(data?.linkToken);
       }
     };
@@ -56,7 +59,7 @@ const PlaidLink = ({
       if (appwriteUser) {
         await exchangePublicToken({
           publicToken: public_token,
-          user: appwriteUser,
+          user: appwriteUser as RequiredEnsUser,
         });
         await updateUserPlaidStatus(appwriteUser.$id, true);
         setPlaidPortalOpen(false);

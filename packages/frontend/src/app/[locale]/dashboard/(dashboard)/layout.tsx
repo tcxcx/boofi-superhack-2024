@@ -17,7 +17,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex h-screen w-full border border-black rounded-r-lg">
+    <div className="flex h-screen w-full border border-black rounded-r-lg overflow-hidden">
       <div className="flex-shrink-0">
         <AltContainer>
           <DashboardSidebar />
@@ -45,7 +45,7 @@ export default function DashboardLayout({
           )}
         />
         <WalletHeader />
-        <div className="flex-grow overflow-auto z-10">{children}</div>
+        <div className="flex-grow overflow-hidden z-10 ">{children}</div>
       </div>
     </div>
   );

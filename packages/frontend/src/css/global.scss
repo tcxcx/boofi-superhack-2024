@@ -124,15 +124,6 @@ body:not(.user-is-tabbing) textarea:focus {
   scrollbar-width: none; /* Firefox */
 }
 
-html.no-scroll {
-  overflow: hidden;
-
-  body {
-    overflow: hidden;
-    touch-action: none;
-  }
-}
-
 .hidden {
   opacity: 0;
   visibility: hidden;
@@ -141,7 +132,7 @@ html.no-scroll {
 // Custom Scrollbar
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-purple) transparent;
+  scrollbar-color: var(--primary) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -150,7 +141,7 @@ html.no-scroll {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--color-purple);
+  background-color: #7c4dff;
   border-radius: 4px;
 }
 
@@ -172,7 +163,7 @@ body {
   }
 
   &::-webkit-scrollbar-thumb:vertical {
-    background: var(--color-purple);
+    background: #7c4dff;
     border-radius: 4px;
   }
 

@@ -24,7 +24,7 @@ export default function Home() {
   };
 
   return (
-    <>
+    <div className="custom-scrollbar">
       <Header />
 
       <div className="mx-auto px-4 relative flex flex-col justify-center overflow-hidden">
@@ -34,6 +34,6 @@ export default function Home() {
           </div>
         </Container>
       </div>
-    </>
+    </div>
   );
 }
