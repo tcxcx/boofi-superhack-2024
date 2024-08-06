@@ -1,5 +1,8 @@
 import { useState, useCallback } from "react";
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import {
+  DynamicContext,
+  useDynamicContext,
+} from "@dynamic-labs/sdk-react-core";
 import { EAS, SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { BrowserProvider, Eip1193Provider, JsonRpcSigner } from "ethers";
 import { EthersExtension } from "@dynamic-labs/ethers-v5";
@@ -8,6 +11,7 @@ export const useCreateAttestation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attestationUID, setAttestationUID] = useState<string | null>(null);
+  const { user } = useDynamicContext();
 
   const { primaryWallet, network } = useDynamicContext();
 
@@ -22,7 +26,6 @@ export const useCreateAttestation = () => {
 
     try {
       let signer: JsonRpcSigner | undefined;
-
       // Try to get signer using different methods
       if (primaryWallet.connector.ethers) {
         signer = await primaryWallet.connector.ethers.getSigner();
@@ -47,9 +50,7 @@ export const useCreateAttestation = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          /* Add any necessary data here */
-        }),
+        body: JSON.stringify({ userId: user?.userId }),
       });
       if (!response.ok) throw new Error("Failed to fetch attestation data");
 
@@ -61,6 +62,21 @@ export const useCreateAttestation = () => {
 
       // Get the signer's address
       const address = await signer.getAddress();
+
+      const eas_score = parseInt(
+        attestationData.schemaData.find((d: any) => d.name === "eas_score")
+          ?.value,
+        10
+      );
+      const eas_grade = attestationData.schemaData.find(
+        (d: any) => d.name === "eas_grade"
+      )?.value;
+      const total_attested = attestationData.schemaData.find(
+        (d: any) => d.name === "total_attested"
+      )?.value;
+      const loan_amount = attestationData.schemaData.find(
+        (d: any) => d.name === "loan_amount"
+      )?.value;
 
       // 3. Initialize SchemaEncoder with the schema string
       const schemaEncoder = new SchemaEncoder(attestationData.schemaString);
@@ -84,9 +100,16 @@ export const useCreateAttestation = () => {
 
       console.log("New attestation UID:", newAttestationUID);
       console.log("Attestation URL:", attestationUrl);
+      console.log("User ID:", user?.userId);
+
       return {
-        attestationUID: newAttestationUID.toString(), // Convert to string
+        attestationUID: newAttestationUID,
         attestationUrl,
+        address,
+        easScore: eas_score,
+        easGrade: eas_grade,
+        totalAttested: total_attested,
+        maxLoanAmount: loan_amount,
       };
     } catch (err) {
       console.error("Attestation error:", err);
@@ -106,5 +129,10 @@ export const useCreateAttestation = () => {
     }
   }, [primaryWallet, network]);
 
-  return { createAttestation, isLoading, error, attestationUID };
+  return {
+    createAttestation,
+    isLoading,
+    error,
+    attestationUID,
+  };
 };

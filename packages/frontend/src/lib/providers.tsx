@@ -90,12 +90,10 @@ export const Providers = ({ children }: ProvidersProps) => {
         ],
         handlers: {
           handleConnectedWallet: (async (wallet: Wallet) => {
-            console.log("handleConnectedWallet was called", wallet);
             return false;
           }) as HandleConnectedWallet,
 
           handleVerifiedUser: async (args: { user: UserProfile }) => {
-            console.log("handleVerifiedUser was called", args);
             const user = args.user as CombinedUserProfile;
 
             const isVerified = await handleUserVerification(user);

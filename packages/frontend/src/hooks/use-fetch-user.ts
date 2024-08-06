@@ -17,7 +17,6 @@ export function useAppwriteUser(userId: string | undefined) {
       }
 
       try {
-        console.log("Fetching user with ID:", userId);
         const response = await fetch(`/api/user/${userId}`);
         if (!response.ok) {
           const errorData = await response.json();
@@ -28,7 +27,6 @@ export function useAppwriteUser(userId: string | undefined) {
           );
         }
         const userData = await response.json();
-        console.log("User data received:", userData);
         setAppwriteUser(userData);
       } catch (err) {
         console.error("Error fetching user:", err);

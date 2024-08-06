@@ -1,0 +1,3 @@
+conda create -n boofi-env python=3.11
+conda activate boofi-env
+conda install pandas numpy requests

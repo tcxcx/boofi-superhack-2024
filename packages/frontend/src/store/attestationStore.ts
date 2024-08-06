@@ -11,6 +11,7 @@ interface AttestationState {
   attestationUrl: string | null;
   errorMessage: string | null;
   isWorldIdVerifying: boolean;
+
   setOpen: (open: boolean) => void;
   setCurrentStep: (step: number) => void;
   setIsConsentChecked: (checked: boolean) => void;
@@ -20,6 +21,13 @@ interface AttestationState {
   setAttestationUrl: (url: string | null) => void;
   setErrorMessage: (message: string | null) => void;
   setIsWorldIdVerifying: (verifying: boolean) => void;
+
+  easGrade: string | null;
+  totalAttested: string | null;
+  maxLoanAmount: string | null;
+  setEasGrade: (grade: string | null) => void;
+  setTotalAttested: (total: string | null) => void;
+  setMaxLoanAmount: (amount: string | null) => void;
   reset: () => void;
 }
 
@@ -43,6 +51,12 @@ export const useAttestationStore = create<AttestationState>((set) => ({
   setErrorMessage: (message: string | null) => set({ errorMessage: message }),
   setIsWorldIdVerifying: (verifying: boolean) =>
     set({ isWorldIdVerifying: verifying }),
+  easGrade: null,
+  totalAttested: null,
+  maxLoanAmount: null,
+  setEasGrade: (grade: string | null) => set({ easGrade: grade }),
+  setTotalAttested: (total: string | null) => set({ totalAttested: total }),
+  setMaxLoanAmount: (amount: string | null) => set({ maxLoanAmount: amount }),
   reset: () =>
     set({
       currentStep: 1,
@@ -53,5 +67,8 @@ export const useAttestationStore = create<AttestationState>((set) => ({
       attestationUrl: null,
       errorMessage: null,
       isWorldIdVerifying: false,
+      easGrade: null,
+      totalAttested: null,
+      maxLoanAmount: null,
     }),
 }));

@@ -29,12 +29,10 @@ const TransactionHistory = ({
     const fetchData = async () => {
       if (userId) {
         try {
-          console.log("Fetching data for userId:", userId, "and id:", id);
           const accountsData = await getAccounts({ userId });
           if (accountsData) {
             setAccounts(accountsData);
             const appwriteItemId = id || accountsData.data[0]?.appwriteItemId;
-            console.log("Using appwriteItemId:", appwriteItemId);
             const accountData = await getAccount({ appwriteItemId });
             setAccount(accountData);
           } else {

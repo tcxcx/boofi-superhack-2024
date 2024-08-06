@@ -40,6 +40,12 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
     setErrorMessage,
     setIsWorldIdVerifying,
     reset,
+    easGrade,
+    totalAttested,
+    maxLoanAmount,
+    setEasGrade,
+    setTotalAttested,
+    setMaxLoanAmount,
   } = useAttestationStore();
 
   const { user } = useDynamicContext();
@@ -150,7 +156,11 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
     if (user?.userId) {
       setIsLoading(true);
       try {
+        console.log("Creating attestation data");
+        console.log("User ID:", user.userId);
+
         const result = await createAttestation();
+
         if (result && result.attestationUID) {
           const response = await fetch("/api/eas/attestation-status", {
             method: "POST",
@@ -162,15 +172,19 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
               data: {
                 attestation_status: true,
                 eas_contract_url: result.attestationUrl,
-                eas_score: 780,
-                eas_grade: "Good",
-                total_attested: "50000",
-                max_loan_amount: "35000",
+                eas_score: result.easScore,
+                eas_grade: result.easGrade,
+                total_attested: result.totalAttested,
+                max_loan_amount: result.maxLoanAmount,
               },
             }),
           });
+
           const updatedStatus = await response.json();
           setCreditScore(updatedStatus.eas_score || null);
+          setEasGrade(updatedStatus.eas_grade || null);
+          setTotalAttested(updatedStatus.total_attested || null);
+          setMaxLoanAmount(updatedStatus.max_loan_amount || null);
           setAttestationUrl(result.attestationUrl);
           setCurrentStep(4);
         }
@@ -346,9 +360,17 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
                   {creditScore} 👻
                 </p>
                 <p className="mt-2 text-sm">
-                  Your credit score falls within the "Good" range, indicating
-                  strong creditworthiness. Based on this, you may be eligible
-                  for loan amounts up to $50,000.
+                  Your credit score falls within the "{easGrade}" range,
+                  indicating
+                  {easGrade === "Excellent" ||
+                  easGrade === "Good" ||
+                  easGrade === "Bad" ||
+                  easGrade === "Very Poor"
+                    ? " strong"
+                    : " moderate"}{" "}
+                  creditworthiness. Based on this, you may be eligible for loan
+                  amounts up to ${maxLoanAmount}. Your total attested value is $
+                  {totalAttested}.
                 </p>
               </div>
               <div className="flex gap-4 justify-center">

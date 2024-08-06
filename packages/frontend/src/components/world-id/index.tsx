@@ -59,10 +59,7 @@ const UniqueProofId: React.FC<UniqueProofIdProps> = ({
       action,
       signal: "",
     };
-    console.log(
-      "Sending proof to backend for verification:\n",
-      JSON.stringify(reqBody)
-    );
+
     const res: Response = await fetch("/api/worldid/verify", {
       method: "POST",
       headers: {
@@ -79,7 +76,6 @@ const UniqueProofId: React.FC<UniqueProofIdProps> = ({
       try {
         if (user) {
           await verifyWorldId(result.verification_level, user);
-          console.log("World ID verification status updated in database");
           onVerified();
         } else {
           setErrorMessage("User is undefined.");

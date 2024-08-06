@@ -24,11 +24,6 @@ export async function createSessionClient() {
 }
 
 export async function createAdminClient() {
-  console.log("Creating admin client");
-  console.log("Endpoint:", process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT);
-  console.log("Project:", process.env.NEXT_PUBLIC_APPWRITE_PROJECT);
-  console.log("API Key set:", !!process.env.NEXT_APPWRITE_KEY);
-
   const client = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT!)

@@ -78,8 +78,6 @@ export async function createUserOrUpdate(userData: DynamicUser) {
       ssn: "1234",
     });
 
-    console.log("Dwolla customer URL:", dwollaCustomerUrl);
-
     if (!dwollaCustomerUrl) throw new Error("Error creating Dwolla customer");
 
     const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
@@ -166,10 +164,7 @@ export async function getUserFromAppwrite(userId: string) {
       userId
     );
 
-    console.log("Raw user data from Appwrite:", user);
-
     const parsedUser = parseStringify(user);
-    console.log("Parsed user data:", parsedUser);
 
     return parsedUser;
   } catch (error: any) {

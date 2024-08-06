@@ -67,7 +67,6 @@ export async function createOrUpdateAppwriteAuthUser(userData: DynamicUser) {
     // Check if the user already exists in Appwrite Auth
     try {
       await user.get(userData.id);
-      console.log(`User ${userData.id} already exists in Appwrite Auth`);
     } catch (error: any) {
       // If the user doesn't exist (404 error), we'll create a new auth entry
       if (error.code === 404) {
@@ -77,7 +76,6 @@ export async function createOrUpdateAppwriteAuthUser(userData: DynamicUser) {
           undefined,
           userData.id
         );
-        console.log(`Created new user ${userData.id} in Appwrite Auth`);
       } else {
         throw error;
       }

@@ -16,9 +16,6 @@ const Wrapper = ({ searchParams }: WrapperProps) => {
   const { userId } = searchParams;
   const { appwriteUser: user, loading, error } = useAppwriteUser(userId);
 
-  console.log("User ID:", userId);
-  console.log("User:", user);
-
   if (loading) {
     return <HomeSkeleton />;
   }

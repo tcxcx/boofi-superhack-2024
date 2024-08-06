@@ -23,10 +23,6 @@ const RecentTransactions = ({
 }: RecentTransactionsProps) => {
   const rowsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / rowsPerPage);
-
-  console.log("appwriteItemId in view all:", appwriteItemId);
-  console.log("userId in view all:", userId);
-
   const indexOfLastTransaction = page * rowsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - rowsPerPage;
 

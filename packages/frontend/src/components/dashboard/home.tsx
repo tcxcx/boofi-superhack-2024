@@ -32,7 +32,6 @@ const Home = ({
 
   const fetchAccounts = useCallback(async () => {
     const accountsData = await getAccounts({ userId });
-    console.log("Here are the Accounts:", accountsData);
 
     if (accountsData) {
       setAccounts(accountsData);
@@ -47,11 +46,6 @@ const Home = ({
       fetchAccounts();
     }
   }, [userId, fetchAccounts]);
-
-  console.log("Home Component User ID:", userId);
-  console.log("Home Component User:", user);
-  console.log("Home Component Accounts:", accounts);
-  console.log("Home Component Only Accounts:", account);
 
   const { tokenBalances } = useTokenBalances();
   const { chainBalances, totalBalanceUSD } =
@@ -69,12 +63,6 @@ const Home = ({
     return <div>No accounts found</div>;
   }
 
-  console.log("Array of Accounts Data:", accounts?.data);
-  console.log("Simple Account Data:", account);
-  console.log(
-    "Appwrite passed as props from Home:",
-    account?.data?.appwriteItemId
-  );
   return (
     <section className="home">
       <div className="home-content">

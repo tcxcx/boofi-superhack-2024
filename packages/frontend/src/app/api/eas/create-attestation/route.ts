@@ -1,4 +1,3 @@
-// In /api/eas/create-attestation/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 
@@ -8,57 +7,68 @@ const schemaUID =
 const schemaString =
   "string eas_contract_url,uint32 eas_score,string eas_grade,string total_attested,string loan_amount,uint64 attestation_date,uint64 expirationTime";
 
-export async function GET(req: NextRequest) {
-  return handleRequest(req);
-}
-
 export async function POST(req: NextRequest) {
-  return handleRequest(req);
-}
+  const { userId } = await req.json();
 
-async function handleRequest(req: NextRequest) {
+  if (!userId) {
+    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+  }
+
+  console.log("User ID in create-attestation:", userId); // Add this line for debugging
+
   try {
-    // Mock data for example
+    // Fetch DeFi potential data from the Jupyter Notebook
+    const potentialResponse = await fetch(
+      `${req.nextUrl.origin}/api/eas/potential-index`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      }
+    );
+
+    if (!potentialResponse.ok) {
+      throw new Error("Failed to fetch DeFi potential data");
+    }
+
+    const potentialData = await potentialResponse.json();
+    console.log("Potential Data:", potentialData);
+
+    if (
+      !potentialData ||
+      typeof potentialData.defiPotentialScore === "undefined"
+    ) {
+      throw new Error("Invalid DeFi potential data received");
+    }
+
+    // Debug: Log the received data
+    console.log("Received DeFi potential data:", potentialData);
+
+    // Use potentialData.maxLoanAmount instead of maxParticipationAmount
     const attestationData = {
       eas_contract_url: "https://example.com/contract",
-      eas_score: 780,
-      eas_grade: "A",
-      total_attested: "50000",
-      loan_amount: "35000",
+      eas_score: potentialData.defiPotentialScore,
+      eas_grade: getGrade(potentialData.defiPotentialScore),
+      total_attested: potentialData.maxLoanAmount.toString(),
+      loan_amount: (potentialData.maxLoanAmount * 0.7).toFixed(2), // 70% of max loan amount, rounded to 2 decimal places
       attestation_date: Math.floor(Date.now() / 1000),
       expirationTime: Math.floor(Date.now() / 1000) + 31536000, // 1 year from now
     };
 
+    // Debug: Log the prepared attestation data
+    console.log("Prepared attestation data:", attestationData);
+
     // Prepare the schema data
-    const schemaData = [
-      {
-        name: "eas_contract_url",
-        value: attestationData.eas_contract_url,
-        type: "string",
-      },
-      { name: "eas_score", value: attestationData.eas_score, type: "uint32" },
-      { name: "eas_grade", value: attestationData.eas_grade, type: "string" },
-      {
-        name: "total_attested",
-        value: attestationData.total_attested,
-        type: "string",
-      },
-      {
-        name: "loan_amount",
-        value: attestationData.loan_amount,
-        type: "string",
-      },
-      {
-        name: "attestation_date",
-        value: attestationData.attestation_date,
-        type: "uint64",
-      },
-      {
-        name: "expirationTime",
-        value: attestationData.expirationTime,
-        type: "uint64",
-      },
-    ];
+    const schemaData = Object.entries(attestationData).map(([name, value]) => ({
+      name,
+      value: value.toString(), // Ensure all values are strings
+      type:
+        name.includes("Time") || name === "attestation_date"
+          ? "uint64"
+          : name === "eas_score"
+          ? "uint32"
+          : "string",
+    }));
 
     // Initialize SchemaEncoder and encode the data
     const schemaEncoder = new SchemaEncoder(schemaString);
@@ -77,13 +87,19 @@ async function handleRequest(req: NextRequest) {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error preparing attestation data:", error);
     return NextResponse.json(
-      { message: "Error preparing attestation data" },
+      { message: "Error preparing attestation data", error: error.message },
       { status: 500 }
     );
   }
 }
 
-// Remove the experimental edge runtime config
+function getGrade(score: number): string {
+  if (score >= 750) return "Excellent";
+  if (score >= 700) return "Good";
+  if (score >= 650) return "Fair";
+  if (score >= 600) return "Poor";
+  return "Very Poor";
+}

@@ -12,7 +12,6 @@ export default function SentTable() {
     args: [address],
   });
 
-  console.log(payments);
   return (
     <>
       <h2 className="text-xl font-bold text-center mt-20">Movements</h2>

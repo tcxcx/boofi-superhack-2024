@@ -57,11 +57,6 @@ const VerifyProofId: React.FC<UniqueProofIdProps> = ({
       userId,
     };
 
-    console.log(
-      "Sending proof to backend for verification and attestation:\n",
-      JSON.stringify(reqBody)
-    );
-
     const res: Response = await fetch("/api/worldid/sybil-attestation", {
       method: "POST",
       headers: {

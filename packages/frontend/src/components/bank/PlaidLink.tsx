@@ -35,9 +35,7 @@ const PlaidLink = ({
   onFailed,
 }: PlaidLinkProps) => {
   const [token, setToken] = useState("");
-  console.log("User object received:", user);
   const userId = user?.userId;
-  console.log("User ID before useAppwriteUser:", userId);
   const { appwriteUser, loading, error } = useAppwriteUser(userId as string);
   const { setPlaidPortalOpen } = useAuthStore();
 
