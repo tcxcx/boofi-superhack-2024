@@ -4,9 +4,9 @@ import { calculateChainBalances } from "@/utils/multiChainBalance";
 import { useTokenBalances } from "@dynamic-labs/sdk-react-core";
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { AttestationDialog } from "./AttestationDialog";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { CryptoBalances, TotalBalanceBoxProps } from "@/lib/types";
 
 const TotalBalanceBox = ({
   accounts = [],
@@ -21,6 +21,13 @@ const TotalBalanceBox = ({
 
   const totalBalance = totalCurrentBalance + totalBalanceUSD;
   const totalAccounts = totalBanks + Object.keys(chainBalances).length;
+
+  const getCryptoBalances = (): CryptoBalances => {
+    return {
+      chainBalances,
+      totalBalanceUSD,
+    };
+  };
 
   const [creditScore, setCreditScore] = useState<number | null>(null);
   const [lastAttestation, setLastAttestation] = useState<string | null>(null);
@@ -103,8 +110,10 @@ const TotalBalanceBox = ({
                   Get your credit score and financial attestation to unlock
                   potential loan opportunities.
                 </p>
-
-                <AttestationDialog buttonText="Get Credit Score" />
+                <AttestationDialog
+                  buttonText="Get Credit Score"
+                  cryptoBalances={getCryptoBalances()}
+                />{" "}
               </div>
             ) : (
               <>
@@ -121,7 +130,10 @@ const TotalBalanceBox = ({
                       </div>
                     </div>
                   </div>
-                  <AttestationDialog buttonText="Update Score" />
+                  <AttestationDialog
+                    buttonText="Update Score"
+                    cryptoBalances={getCryptoBalances() as any}
+                  />
                 </div>
                 <div className="flex justify-between items-center space-x-6">
                   <div>

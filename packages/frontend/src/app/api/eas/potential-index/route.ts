@@ -3,11 +3,14 @@ import { spawn } from "child_process";
 import path from "path";
 
 export async function POST(req: NextRequest) {
-  const { userId } = await req.json();
+  const { userId, cryptoBalances } = await req.json();
 
   if (!userId) {
     return NextResponse.json({ error: "User ID is required" }, { status: 400 });
   }
+
+  console.log("Received userId:", userId);
+  console.log("Received cryptoBalances:", cryptoBalances);
 
   const scriptPath = path.join(
     process.cwd(),
@@ -25,36 +28,35 @@ export async function POST(req: NextRequest) {
       "python",
       scriptPath,
       userId,
+      JSON.stringify(cryptoBalances || { totalBalanceUSD: 0 }),
     ]);
 
     let outputData = "";
+    let errorData = "";
 
     pythonProcess.stdout.on("data", (data) => {
       outputData += data.toString();
     });
 
     pythonProcess.stderr.on("data", (data) => {
-      console.error(`Error: ${data}`);
+      errorData += data.toString();
+      console.error(`Python script error: ${data}`);
     });
 
     pythonProcess.on("close", (code) => {
       if (code !== 0) {
+        console.error("Python script error output:", errorData);
         resolve(
           NextResponse.json(
-            { error: "Error executing Python script" },
+            { error: "Error executing Python script", details: errorData },
             { status: 500 }
           )
         );
       } else {
         try {
-          console.log("Script output data:", outputData); // Log the entire output for debugging
+          console.log("Script output data:", outputData);
 
-          // Attempt to parse the JSON output
-          const jsonString = outputData.match(/{.*}/)?.[0] || "";
-
-          console.log("Extracted JSON string:", jsonString); // Log the extracted JSON string for debugging
-
-          const jsonOutput = JSON.parse(jsonString);
+          const jsonOutput = JSON.parse(outputData);
 
           // Perform detailed validation
           if (
@@ -75,6 +77,7 @@ export async function POST(req: NextRequest) {
               {
                 error: "Error parsing script output",
                 details: error.message,
+                output: outputData,
               },
               { status: 500 }
             )

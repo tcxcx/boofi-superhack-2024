@@ -104,7 +104,7 @@ export const useCreateAttestation = () => {
 
       return {
         attestationUID: newAttestationUID,
-        attestationUrl,
+        attestationUrl: attestationUrl,
         address,
         easScore: eas_score,
         easGrade: eas_grade,

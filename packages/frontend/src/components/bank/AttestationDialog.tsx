@@ -18,8 +18,16 @@ import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useCreateAttestation } from "@/hooks/use-attestation-creation";
 import { WorldIdVerification } from "@/components/dynamic-content/WorldIdVerification";
 import { useAttestationStore } from "@/store/attestationStore";
+import { CryptoBalances } from "@/lib/types";
 
-export function AttestationDialog({ buttonText = "Get Credit Score" }) {
+interface AttestationDialogProps {
+  buttonText?: string;
+  cryptoBalances: CryptoBalances;
+}
+export function AttestationDialog({
+  buttonText = "Get Credit Score",
+  cryptoBalances,
+}: AttestationDialogProps) {
   const {
     open,
     currentStep,
@@ -60,6 +68,8 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
       loadAttestationStatus();
     }
   }, [user, open]);
+
+  console.log("cryptoBalances", cryptoBalances);
 
   const loadAttestationStatus = useCallback(async () => {
     if (user?.userId) {
@@ -152,12 +162,39 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
     setErrorMessage("World ID verification failed. Please try again.");
   };
 
+  const sendFinancialDataToServer = async () => {
+    if (user?.userId) {
+      try {
+        const response = await fetch("/api/eas/user-financial-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.userId,
+            cryptoBalances,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to send financial data to the server");
+        }
+      } catch (error) {
+        console.error("Error sending financial data to the server:", error);
+      }
+    }
+  };
+
   const handleEASAttestation = async () => {
     if (user?.userId) {
       setIsLoading(true);
       try {
-        console.log("Creating attestation data");
-        console.log("User ID:", user.userId);
+        const response = await fetch("/api/eas/potential-index", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.userId,
+            cryptoBalances: cryptoBalances || { totalBalanceUSD: 0 },
+          }),
+        });
 
         const result = await createAttestation();
 
@@ -360,17 +397,10 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
                   {creditScore} 👻
                 </p>
                 <p className="mt-2 text-sm">
-                  Your credit score falls within the "{easGrade}" range,
-                  indicating
-                  {easGrade === "Excellent" ||
-                  easGrade === "Good" ||
-                  easGrade === "Bad" ||
-                  easGrade === "Very Poor"
-                    ? " strong"
-                    : " moderate"}{" "}
-                  creditworthiness. Based on this, you may be eligible for loan
-                  amounts up to ${maxLoanAmount}. Your total attested value is $
-                  {totalAttested}.
+                  Your credit score falls within the "{easGrade}" range. Your
+                  total attested value is ${totalAttested}. Based on this
+                  assessment, you may be eligible for loan amounts up to $
+                  {maxLoanAmount}.
                 </p>
               </div>
               <div className="flex gap-4 justify-center">

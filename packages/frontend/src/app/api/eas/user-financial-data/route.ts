@@ -11,8 +11,6 @@ export async function GET(req: NextRequest) {
     // Fetching bank accounts
     const accountsData = await getAccounts({ userId });
 
-    // For now, we'll return only bank account data
-    // Crypto balances should be handled client-side
     const financialData = {
       bankAccounts: accountsData,
     };

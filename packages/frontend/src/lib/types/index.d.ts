@@ -1,5 +1,7 @@
 /* eslint-disable no-unused-vars */
 
+import { decl } from "postcss";
+
 declare type SearchParamProps = {
   params: { [key: string]: string };
   searchParams: { [key: string]: string | string[] | undefined };
@@ -84,6 +86,23 @@ declare type Transaction = {
   channel: string;
   senderBankId: string;
   receiverBankId: string;
+};
+declare type TokenBalance = {
+  networkId: number;
+  marketValue: number;
+};
+
+declare type ChainBalances = {
+  [key: string]: {
+    chainName: string;
+    tokens: TokenBalance[];
+    totalUSD: number;
+  };
+};
+
+declare type CryptoBalances = {
+  chainBalances: ChainBalances;
+  totalBalanceUSD: number;
 };
 
 declare type Bank = {

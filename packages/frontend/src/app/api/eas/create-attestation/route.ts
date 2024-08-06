@@ -11,9 +11,8 @@ export async function POST(req: NextRequest) {
   const { userId } = await req.json();
 
   if (!userId) {
-    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    throw new Error("User ID is required");
   }
-
   console.log("User ID in create-attestation:", userId); // Add this line for debugging
 
   try {
@@ -46,11 +45,12 @@ export async function POST(req: NextRequest) {
 
     // Use potentialData.maxLoanAmount instead of maxParticipationAmount
     const attestationData = {
-      eas_contract_url: "https://example.com/contract",
+      eas_contract_url:
+        "https://base-sepolia.easscan.org/attestation/view/{attestationUID}",
       eas_score: potentialData.defiPotentialScore,
       eas_grade: getGrade(potentialData.defiPotentialScore),
-      total_attested: potentialData.maxLoanAmount.toString(),
-      loan_amount: (potentialData.maxLoanAmount * 0.7).toFixed(2), // 70% of max loan amount, rounded to 2 decimal places
+      total_attested: potentialData.totalAttested.toString(),
+      loan_amount: potentialData.maxLoanAmount, // 70% of max loan amount, rounded to 2 decimal places
       attestation_date: Math.floor(Date.now() / 1000),
       expirationTime: Math.floor(Date.now() / 1000) + 31536000, // 1 year from now
     };
