@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,24 +12,41 @@ import { Label } from "@/components/ui/label";
 import Spinner from "@/components/ui/spinner";
 import {
   updateAttestationStep,
-  getAttestationStatus,
+  getUnfinishedAttestationWithWorldIdValid,
 } from "@/lib/actions/attestation.actions";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
-import useCreateAttestation from "@/hooks/use-attestation-creation";
+import { useCreateAttestation } from "@/hooks/use-attestation-creation";
+import { WorldIdVerification } from "@/components/dynamic-content/WorldIdVerification";
+import { useAttestationStore } from "@/store/attestationStore";
 
 export function AttestationDialog({ buttonText = "Get Credit Score" }) {
-  const [open, setOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isConsentChecked, setIsConsentChecked] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [creditScore, setCreditScore] = useState<number | null>(null);
+  const {
+    open,
+    currentStep,
+    isConsentChecked,
+    isVerified,
+    isLoading,
+    creditScore,
+    attestationUrl,
+    errorMessage,
+    isWorldIdVerifying,
+    setOpen,
+    setCurrentStep,
+    setIsConsentChecked,
+    setIsVerified,
+    setIsLoading,
+    setCreditScore,
+    setAttestationUrl,
+    setErrorMessage,
+    setIsWorldIdVerifying,
+    reset,
+  } = useAttestationStore();
+
   const { user } = useDynamicContext();
   const {
     createAttestation,
     isLoading: isEASLoading,
     error: easError,
-    attestationUID,
   } = useCreateAttestation();
 
   useEffect(() => {
@@ -38,14 +55,58 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
     }
   }, [user, open]);
 
-  const loadAttestationStatus = async () => {
+  const loadAttestationStatus = useCallback(async () => {
     if (user?.userId) {
-      const status = await getAttestationStatus(user.userId);
-      if (status) {
-        setIsConsentChecked(status.consent || false);
-        setIsVerified(status.world_id_valid || false);
-        setCreditScore(status.eas_score || null);
-        setCurrentStep(getStepFromStatus(status));
+      try {
+        const response = await fetch("/api/eas/attestation-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.userId,
+            action: "getUnfinishedAttestationWithWorldIdValid",
+          }),
+        });
+        const attestation = await response.json();
+        if (attestation && attestation.world_id_valid) {
+          setIsVerified(true);
+          setCurrentStep(getStepFromStatus(attestation));
+        }
+      } catch (error) {
+        console.error("Error loading attestation status:", error);
+      }
+    }
+  }, [user?.userId]);
+
+  const handleConsentChange = () => {
+    setIsConsentChecked(!isConsentChecked);
+  };
+
+  const handleNextStep = async () => {
+    if (user?.userId) {
+      setIsLoading(true);
+      setErrorMessage(null);
+      try {
+        const response = await fetch("/api/eas/attestation-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.userId,
+            action: "updateStep",
+            step: "consent",
+            data: { consent: isConsentChecked },
+          }),
+        });
+        const updatedStatus = await response.json();
+        if (updatedStatus.consent) {
+          setCurrentStep(2);
+        } else {
+          setErrorMessage("Failed to update consent. Please try again.");
+        }
+      } catch (error) {
+        console.error("Error updating consent:", error);
+        setErrorMessage("An error occurred. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -57,78 +118,82 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
     return 1;
   };
 
-  const handleConsentChange = async () => {
+  const handleWorldIdVerificationSuccess = async () => {
     if (user?.userId) {
       setIsLoading(true);
       try {
-        await updateAttestationStep(user.userId, "consent", {
-          consent: !isConsentChecked,
-        });
-        setIsConsentChecked(!isConsentChecked);
+        const updatedStatus = await updateAttestationStep(
+          user.userId,
+          "worldId",
+          {
+            world_id_valid: true,
+          }
+        );
+        setIsVerified(true);
+        setCurrentStep(getStepFromStatus(updatedStatus));
       } catch (error) {
-        console.error("Error updating consent:", error);
+        console.error("Error updating WorldID verification:", error);
+      } finally {
+        setIsLoading(false);
+        setIsWorldIdVerifying(false);
       }
-      setIsLoading(false);
     }
   };
 
-  const handleVerify = async () => {
-    if (user?.userId) {
-      setIsLoading(true);
-      try {
-        await updateAttestationStep(user.userId, "worldId", {
-          world_id_valid: true,
-        });
-        setIsVerified(true);
-        setCurrentStep(3);
-      } catch (error) {
-        console.error("Error updating WorldID verification:", error);
-      }
-      setIsLoading(false);
-    }
+  const handleWorldIdVerificationFailure = () => {
+    console.error("World ID verification failed");
+    setIsWorldIdVerifying(false);
+    setErrorMessage("World ID verification failed. Please try again.");
   };
 
   const handleEASAttestation = async () => {
     if (user?.userId) {
       setIsLoading(true);
       try {
-        await createAttestation();
-        if (attestationUID) {
-          const updatedStatus = await updateAttestationStep(
-            user.userId,
-            "eas",
-            {
-              attestation_status: true,
-              eas_contract_url: attestationUID,
-              eas_score: 780, // This should be calculated based on actual data
-              eas_grade: "Good",
-              total_attested: "50000", // This should be calculated based on actual data
-              max_loan_amount: "35000", // This should be calculated based on actual data
-            }
-          );
+        const result = await createAttestation();
+        if (result && result.attestationUID) {
+          const response = await fetch("/api/eas/attestation-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: user.userId,
+              action: "updateStep",
+              step: "eas",
+              data: {
+                attestation_status: true,
+                eas_contract_url: result.attestationUrl,
+                eas_score: 780,
+                eas_grade: "Good",
+                total_attested: "50000",
+                max_loan_amount: "35000",
+              },
+            }),
+          });
+          const updatedStatus = await response.json();
           setCreditScore(updatedStatus.eas_score || null);
+          setAttestationUrl(result.attestationUrl);
           setCurrentStep(4);
         }
       } catch (error) {
         console.error("Error creating EAS attestation:", error);
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "An error occurred during attestation creation"
+        );
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
-  };
-
-  const resetDialog = () => {
-    setCurrentStep(1);
-    setIsConsentChecked(false);
-    setIsVerified(false);
-    setIsLoading(false);
-    setCreditScore(null);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
     if (!newOpen) {
-      resetDialog();
+      if (currentStep === 4) {
+        reset();
+      }
     }
+    setOpen(newOpen);
   };
 
   return (
@@ -178,16 +243,29 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
               </div>
               <Button
                 disabled={!isConsentChecked || isLoading}
-                onClick={() => setCurrentStep(2)}
+                onClick={handleNextStep}
                 className="w-full"
               >
                 {isLoading ? <Spinner /> : "Next"}
               </Button>
+              {errorMessage && (
+                <p className="text-sm text-red-600 text-center mt-2">
+                  {errorMessage}
+                </p>
+              )}
             </div>
           )}
 
           {currentStep === 2 && (
             <div className="space-y-4">
+              {!isVerified && !isWorldIdVerifying && (
+                <WorldIdVerification
+                  userId={user?.userId || ""}
+                  onVerified={handleWorldIdVerificationSuccess}
+                  onFailed={handleWorldIdVerificationFailure}
+                />
+              )}
+
               <h2 className="text-lg font-semibold">Identity Verification</h2>
               <p className="text-sm">
                 To ensure the integrity of the attestation process, we use
@@ -195,23 +273,50 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
                 verification helps us confirm that you are a unique individual
                 and prevent fraudulent activities.
               </p>
+
+              {isWorldIdVerifying && (
+                <p className="text-sm text-center">
+                  Verification in progress...
+                </p>
+              )}
+              {isVerified && (
+                <p className="text-sm text-green-600 text-center">
+                  Identity verified successfully!
+                </p>
+              )}
               <Button
-                onClick={handleVerify}
+                onClick={() => setCurrentStep(3)}
                 className="w-full"
-                disabled={isVerified || isLoading}
+                disabled={!isVerified || isLoading}
               >
-                {isLoading ? <Spinner /> : "Verify with WorldID"}
+                {isLoading ? <Spinner /> : "Next"}
               </Button>
             </div>
           )}
 
           {currentStep === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Processing Attestation</h2>
-              <p className="text-sm text-center">
-                We're creating your on-chain attestation. This may take a
-                moment, please wait.
-              </p>
+              {isEASLoading || isLoading ? (
+                <>
+                  <h2 className="text-lg font-semibold">
+                    Processing Attestation...
+                  </h2>
+                  <p className="text-sm text-center">
+                    We're creating your on-chain attestation. This may take a
+                    moment, please wait.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-lg font-semibold">
+                    Begin Your Credit Attestation
+                  </h2>
+                  <p className="text-sm text-center">
+                    BooFi will start processing your credit score and create
+                    your on-chain attestation.
+                  </p>
+                </>
+              )}
               <Button
                 onClick={handleEASAttestation}
                 className="w-full"
@@ -223,6 +328,11 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
                   "Create On-Chain Attestation"
                 )}
               </Button>
+              {easError && (
+                <p className="text-sm text-red-600 text-center mt-2">
+                  {easError}
+                </p>
+              )}
             </div>
           )}
 
@@ -244,15 +354,20 @@ export function AttestationDialog({ buttonText = "Get Credit Score" }) {
               <div className="flex gap-4 justify-center">
                 <Button
                   variant="outline"
-                  onClick={() =>
-                    window.open(
-                      `https://sepolia.easscan.org/attestation/view/${attestationUID}`,
-                      "_blank"
-                    )
-                  }
+                  onClick={() => {
+                    if (attestationUrl) {
+                      window.open(attestationUrl, "_blank");
+                    } else {
+                      console.error("Attestation URL is not available");
+                      setErrorMessage(
+                        "Unable to retrieve the attestation URL. Please try again later."
+                      );
+                    }
+                  }}
                 >
                   Verify on EAS
                 </Button>
+
                 <Button
                   variant="outline"
                   onClick={() => {

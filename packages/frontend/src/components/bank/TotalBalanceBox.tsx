@@ -2,10 +2,11 @@ import AnimatedCounter from "./AnimatedCounter";
 import { DoughnutChart } from "./DoughnutChart";
 import { calculateChainBalances } from "@/utils/multiChainBalance";
 import { useTokenBalances } from "@dynamic-labs/sdk-react-core";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AttestationDialog } from "./AttestationDialog";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 
 const TotalBalanceBox = ({
   accounts = [],
@@ -13,6 +14,8 @@ const TotalBalanceBox = ({
   totalCurrentBalance,
 }: TotalBalanceBoxProps) => {
   const { tokenBalances } = useTokenBalances();
+  const { user } = useDynamicContext();
+
   const { chainBalances, totalBalanceUSD } =
     calculateChainBalances(tokenBalances);
 
@@ -22,13 +25,41 @@ const TotalBalanceBox = ({
   const [creditScore, setCreditScore] = useState<number | null>(null);
   const [lastAttestation, setLastAttestation] = useState<string | null>(null);
   const [loanAmount, setLoanAmount] = useState<number | null>(null);
+  const [attestationUrl, setAttestationUrl] = useState<string | null>(null);
+  const [easGrade, setEasGrade] = useState<string | null>(null);
 
-  const handleGetScore = async () => {
-    const score = Math.floor(Math.random() * (850 - 300 + 1)) + 300;
-    setCreditScore(score);
-    setLastAttestation(new Date().toISOString());
-    setLoanAmount(totalBalance * 0.7);
-  };
+  const loadLatestAttestation = useCallback(async () => {
+    if (user?.userId) {
+      try {
+        const response = await fetch("/api/eas/attestation-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.userId,
+            action: "getLatestAttestation",
+          }),
+        });
+        const latestAttestation = await response.json();
+        if (latestAttestation) {
+          setCreditScore(latestAttestation.eas_score || null);
+          setLastAttestation(latestAttestation.attestation_date || null);
+          setLoanAmount(
+            latestAttestation.max_loan_amount
+              ? parseFloat(latestAttestation.max_loan_amount)
+              : null
+          );
+          setAttestationUrl(latestAttestation.eas_contract_url || null);
+          setEasGrade(latestAttestation.eas_grade || null);
+        }
+      } catch (error) {
+        console.error("Error loading latest attestation:", error);
+      }
+    }
+  }, [user?.userId]);
+
+  useEffect(() => {
+    loadLatestAttestation();
+  }, [loadLatestAttestation]);
 
   return (
     <section className="total-balance hover:glassmorphism bg-white bg-secondary p-6 justify-between">
@@ -78,20 +109,25 @@ const TotalBalanceBox = ({
             ) : (
               <>
                 <div className="flex justify-between items-center space-x-6">
-                  <div>
-                    <div className="text-6xl font-bold inline-flex items-baseline ">
-                      {creditScore || "N/A"}{" "}
-                      <p className="text-3xl translate-y-2">👻</p>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Credit Score
+                  <div className="relative">
+                    <div className="text-sm text-indigo-600">Credit Score</div>
+                    <div className="text-6xl font-bold inline-flex items-baseline">
+                      {creditScore || "N/A"}
+                      <div className="relative text-center ml-1">
+                        <p className="text-3xl -translate-y-8 font-bold font-clash text-primary">
+                          {easGrade || "N/A"}
+                        </p>
+                        <p className="text-3xl -translate-y-8">👻</p>
+                      </div>
                     </div>
                   </div>
                   <AttestationDialog buttonText="Update Score" />
                 </div>
                 <div className="flex justify-between items-center space-x-6">
                   <div>
-                    <div className="text-sm font-medium">Last Attested</div>
+                    <div className="text-sm font-bold text-indigo-600">
+                      Last Attested
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {lastAttestation
                         ? new Date(lastAttestation).toLocaleDateString()
@@ -99,7 +135,7 @@ const TotalBalanceBox = ({
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm font-medium">
+                    <div className="text-sm font-bold text-indigo-600">
                       Potential Loan Amount
                     </div>
                     <div className="text-sm text-muted-foreground">

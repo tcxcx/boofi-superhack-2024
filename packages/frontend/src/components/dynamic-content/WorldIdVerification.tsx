@@ -1,5 +1,5 @@
 import React from "react";
-import UniqueProofId from "../world-id";
+import VerifyProofId from "../world-id/verify-only";
 
 interface WorldIdVerificationProps {
   onVerified: () => void;
@@ -14,7 +14,7 @@ export const WorldIdVerification: React.FC<WorldIdVerificationProps> = ({
 }) => {
   return (
     <>
-      <UniqueProofId
+      <VerifyProofId
         userId={userId}
         onStart={() => {}}
         onVerified={onVerified}

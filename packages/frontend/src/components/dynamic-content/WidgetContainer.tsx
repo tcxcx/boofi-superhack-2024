@@ -22,6 +22,7 @@ import { useSession } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
 import PlaidLink from "@/components/bank/PlaidLink";
 import { useLocale } from "next-intl";
+import { RequiredEnsUser } from "@/components/bank/PlaidLink";
 
 export function WidgetContainer() {
   const { user } = useDynamicContext();
@@ -79,15 +80,6 @@ export function WidgetContainer() {
     }
   };
 
-  const goToDashboard = () => {
-    if (user && user.userId) {
-      console.log("Navigating to dashboard with user ID:", user.userId);
-      const path = `/${locale}/dashboard?userId=${user.userId}`;
-      router.push(path);
-    } else {
-      console.error("User ID not available");
-    }
-  };
   return (
     <div className="flex items-center space-x-2">
       <DynamicNav />
@@ -147,7 +139,7 @@ export function WidgetContainer() {
                     onClick={() => setPlaidPortalOpen(false)}
                   >
                     <PlaidLink
-                      user={user as CombinedUserProfile}
+                      user={user as RequiredEnsUser}
                       variant="outline"
                       onStart={handlePlaidStart}
                       onVerified={() => handlePlaidClose(true)}

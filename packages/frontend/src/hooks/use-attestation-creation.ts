@@ -1,16 +1,15 @@
 import { useState, useCallback } from "react";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { EAS, SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
-import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
+import { BrowserProvider, Eip1193Provider, JsonRpcSigner } from "ethers";
 import { EthersExtension } from "@dynamic-labs/ethers-v5";
-// use ethersExtension and DynamicContextProvider  if this doesn't work since it's probable dynamic is not ethers v5 compatible by default
 
-const useCreateAttestation = () => {
+export const useCreateAttestation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attestationUID, setAttestationUID] = useState<string | null>(null);
 
-  const { primaryWallet } = useDynamicContext();
+  const { primaryWallet, network } = useDynamicContext();
 
   const createAttestation = useCallback(async () => {
     if (!primaryWallet) {
@@ -22,31 +21,48 @@ const useCreateAttestation = () => {
     setError(null);
 
     try {
-      // Get the signer from Dynamic
-      const signer = await primaryWallet?.connector.ethers?.getSigner();
+      let signer: JsonRpcSigner | undefined;
+
+      // Try to get signer using different methods
+      if (primaryWallet.connector.ethers) {
+        signer = await primaryWallet.connector.ethers.getSigner();
+      } else if (primaryWallet.connector.getWeb3Provider) {
+        const web3Provider = await primaryWallet.connector.getWeb3Provider();
+        const provider = new BrowserProvider(web3Provider as Eip1193Provider);
+        signer = await provider.getSigner();
+      } else if (window.ethereum) {
+        const provider = new BrowserProvider(
+          window.ethereum as Eip1193Provider
+        );
+        signer = await provider.getSigner();
+      }
 
       if (!signer) {
-        throw new Error("Signer not available");
+        throw new Error("Failed to get signer");
       }
 
       // 1. Fetch data from the API
-      const response = await fetch("/api/eas/create-attestation");
+      const response = await fetch("/api/eas/create-attestation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          /* Add any necessary data here */
+        }),
+      });
       if (!response.ok) throw new Error("Failed to fetch attestation data");
 
       const attestationData = await response.json();
       const eas = new EAS(attestationData.easContractAddress);
 
-      // Use the Dynamic wallet's provider to connect EAS
-      const provider = await primaryWallet.connector.getPublicClient();
-      if (!provider) throw new Error("Failed to get provider");
-
-      await eas.connect(signer);
+      // Connect EAS to the signer
+      eas.connect(signer);
 
       // Get the signer's address
       const address = await signer.getAddress();
 
       // 3. Initialize SchemaEncoder with the schema string
-
       const schemaEncoder = new SchemaEncoder(attestationData.schemaString);
       const encodedData = schemaEncoder.encodeData(attestationData.schemaData);
 
@@ -54,7 +70,7 @@ const useCreateAttestation = () => {
       const tx = await eas.attest({
         schema: attestationData.schemaUID,
         data: {
-          recipient: attestationData.recipient,
+          recipient: address,
           expirationTime: attestationData.expirationTime,
           revocable: attestationData.revocable,
           data: encodedData,
@@ -62,19 +78,33 @@ const useCreateAttestation = () => {
       });
 
       const newAttestationUID = await tx.wait();
+
+      const attestationUrl = `https://base-sepolia.easscan.org/attestation/view/${newAttestationUID}`;
       setAttestationUID(newAttestationUID);
 
       console.log("New attestation UID:", newAttestationUID);
+      console.log("Attestation URL:", attestationUrl);
+      return {
+        attestationUID: newAttestationUID.toString(), // Convert to string
+        attestationUrl,
+      };
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
+      console.error("Attestation error:", err);
+      if (err instanceof Error) {
+        if (err.message.includes("insufficient funds")) {
+          setError(
+            "Insufficient funds. Please add more tokens to your wallet and try again."
+          );
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("An unknown error occurred");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [primaryWallet]);
+  }, [primaryWallet, network]);
 
   return { createAttestation, isLoading, error, attestationUID };
 };
-
-export default useCreateAttestation;

@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { Translations } from "@/lib/types/translations";
 import PaymentLink from "../payment-link-card";
 import { useAccount } from "wagmi";
-
 interface HomeContentProps {
   translations: Translations["Home"];
 }

@@ -45,7 +45,7 @@ export default function DashboardLayout({
           )}
         />
         <WalletHeader />
-        <div className="flex-grow overflow-hidden z-10 ">{children}</div>
+        <div className="flex-grow overflow-hidden z-1 ">{children}</div>
       </div>
     </div>
   );

@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
-import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
 import UniqueProofId from "../world-id";
 import { X, Check } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { getUserVerificationStatus } from "@/lib/actions/worldId.actions";
 import PlaidLink from "@/components/bank/PlaidLink";
-import { CombinedUserProfile } from "@/lib/types/dynamic";
+import { RequiredEnsUser } from "@/components/bank/PlaidLink";
 
 enum AuthStep {
   Initial,
@@ -129,7 +127,7 @@ export function AuthFlow({
             "Plaid",
             !isPlaidVerified && (
               <PlaidLink
-                user={user as CombinedUserProfile}
+                user={user as RequiredEnsUser}
                 variant="outline"
                 onStart={onPlaidStart}
                 onVerified={() => handlePlaidComplete(true)}

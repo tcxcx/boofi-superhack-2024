@@ -48,12 +48,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button";
     if (variant === "fito") {
       return (
-        <div className={cn(buttonVariants({ variant, size, className }))}>
+        <Comp
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...props}
+        >
           <span className="absolute inset-y-0 left-0 w-[3px] bg-indigo-400 transition-all group-hover:w-full group-active:bg-indigo-500"></span>
-          <span className="relative  transition-colors group-hover:text-white">
+          <span className="relative transition-colors group-hover:text-white">
             {props.children}
           </span>
-        </div>
+        </Comp>
       );
     }
     if (variant === "paez") {

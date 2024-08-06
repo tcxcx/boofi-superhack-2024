@@ -17,7 +17,7 @@ import Spinner from "../ui/spinner";
 import { updateUserPlaidStatus } from "@/lib/actions/user.actions";
 
 // Define the RequiredEnsUser type
-type RequiredEnsUser = CombinedUserProfile & { ens: any };
+export type RequiredEnsUser = CombinedUserProfile & { ens: any };
 
 interface PlaidLinkProps {
   user: RequiredEnsUser;

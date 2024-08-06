@@ -1,9 +1,6 @@
-// src/app/api/dynamic-webhook/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { verifySignature } from "@/utils/verifySignatureWebhook";
 import { eventQueue } from "@/lib/queue";
-import { useAuthStore } from "@/store/authStore";
-import useGetDynamicUser from "@/hooks/use-get-dynamic-user";
 import { setUserIdFromData } from "@/utils/setUserId";
 
 const DYNAMIC_SECRET = process.env.DYNAMIC_SECRET!;

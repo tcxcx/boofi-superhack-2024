@@ -1,4 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+// In /api/eas/create-attestation/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 
 const easContractAddress = "0x4200000000000000000000000000000000000021";
@@ -7,18 +8,17 @@ const schemaUID =
 const schemaString =
   "string eas_contract_url,uint32 eas_score,string eas_grade,string total_attested,string loan_amount,uint64 attestation_date,uint64 expirationTime";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
+export async function GET(req: NextRequest) {
+  return handleRequest(req);
+}
 
+export async function POST(req: NextRequest) {
+  return handleRequest(req);
+}
+
+async function handleRequest(req: NextRequest) {
   try {
-    // Here we will fetch data from our Jupyter notebook endpoint
-    // where we process the data and prepare it for EAS credit score attestation for a given user
-    // For this example, we'll use mock data
+    // Mock data for example
     const attestationData = {
       eas_contract_url: "https://example.com/contract",
       eas_score: 780,
@@ -71,14 +71,19 @@ export default async function handler(
       schemaString,
       schemaData,
       encodedData,
-      recipient: "0x0000000000000000000000000000000000000000", // This should be set to the actual recipient address
+      recipient: "0x0000000000000000000000000000000000000000",
       expirationTime: attestationData.expirationTime,
       revocable: true,
     };
 
-    res.status(200).json(response);
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error preparing attestation data:", error);
-    res.status(500).json({ message: "Error preparing attestation data" });
+    return NextResponse.json(
+      { message: "Error preparing attestation data" },
+      { status: 500 }
+    );
   }
 }
+
+// Remove the experimental edge runtime config

@@ -159,10 +159,6 @@ export async function getUser(userId: string) {
 export async function getUserFromAppwrite(userId: string) {
   const { database } = await createAdminClient();
 
-  console.log("getUserFromAppwrite called with userId:", userId);
-  console.log("DATABASE_ID:", DATABASE_ID);
-  console.log("USERS_COLLECTION_ID:", USERS_COLLECTION_ID);
-
   try {
     const user = await database.getDocument(
       DATABASE_ID!,
