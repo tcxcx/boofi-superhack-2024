@@ -5,7 +5,14 @@ import LinkForm from "@/components/forms/link-form";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-
+import {
+  Tabs,
+  TabsContent,
+  TabsTriggerAlt,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import CardSkeleton from "@/components/dashboard/skeleton/card-skeleton";
 function PaymentLinkContent() {
   const [activeButton, setActiveButton] = useState("send");
   const [claimId, setClaimId] = useState("");
@@ -25,33 +32,36 @@ function PaymentLinkContent() {
 
   return (
     <>
-      <div className="flex w-full mx-auto mb-2 gap-2 flex-wrap uppercase">
-        <Button
-          size="sm"
-          variant="paez"
-          className={activeButton === "send" ? "active" : ""}
-          onClick={() => handleButtonClick("send")}
-        >
-          Send
-        </Button>
-        <Button
-          size="sm"
-          variant="paez"
-          className={activeButton === "receive" ? "active" : ""}
-          onClick={() => handleButtonClick("receive")}
-        >
-          Receive
-        </Button>
-      </div>
-      {activeButton === "send" && <LinkForm />}
-      {activeButton === "receive" && <ClaimForm claimId={claimId} />}
+      <Tabs
+        defaultValue="send"
+        className="flex w-full flex-col mb-2 gap-2  uppercase"
+      >
+        <TabsList className="gap-2">
+          <TabsTriggerAlt value="send">
+            <Button size="sm" variant="paez">
+              Send
+            </Button>
+          </TabsTriggerAlt>
+          <TabsTriggerAlt value="receive">
+            <Button size="sm" variant="paez">
+              Receive
+            </Button>
+          </TabsTriggerAlt>
+        </TabsList>
+        <TabsContent value="send" className="flex-col">
+          <LinkForm />
+        </TabsContent>
+        <TabsContent value="receive" className="flex-col flex-1">
+          <ClaimForm claimId={claimId} />
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
 
 export default function PaymentLink() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<CardSkeleton />}>
       <PaymentLinkContent />
     </Suspense>
   );

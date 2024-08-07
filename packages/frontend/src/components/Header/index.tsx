@@ -16,7 +16,7 @@ const Header: React.FC = () => {
   const MotionLink = motion(Link);
 
   return (
-    <header className="bg-transparent relative">
+    <header className="bg-transparent relative pb-6">
       <div className="container mx-auto grid grid-cols-3 items-center">
         <div className="flex items-center space-x-2">
           <Suspense fallback={<Skeleton className="h-4 w-[250px]" />}>
@@ -26,7 +26,7 @@ const Header: React.FC = () => {
 
           <span className="h-px flex-1 bg-black"></span>
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center group">
           <MotionLink
             href="/"
             whileHover={{ scale: 1.15, rotate: 4 }}
@@ -41,6 +41,11 @@ const Header: React.FC = () => {
                   height={100}
                 />
               </SparklesText>{" "}
+              <span className="absolute mt-28 sm:mt-20 z-100 opacity-0 group-hover:opacity-100 group-hover:-rotate-12  transition-all duration-300">
+                <span className="inline-block font-clash bg-gradient-to-r text-3xl from-indigo-300 via-purple-400 to-cyan-300 bg-clip-text text-transparent">
+                  BooFi
+                </span>{" "}
+              </span>
             </div>
           </MotionLink>
         </div>

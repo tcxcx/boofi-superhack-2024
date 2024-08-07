@@ -2,7 +2,6 @@ import { useState, ChangeEvent, useEffect } from "react";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
-  PiggyBank,
   PiggyBankIcon,
   XIcon,
 } from "lucide-react";
@@ -20,14 +19,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FadeText } from "@/components/magicui/fade-text";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-
+import NetworkSelector from "../chain-network-select";
 export default function ClaimForm({
   claimId: initialClaimId,
 }: {
   claimId: string | undefined;
 }) {
   const { address } = useAccount();
-
   const { data: hash, writeContractAsync: claimPaymentLink } =
     useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
@@ -109,45 +107,50 @@ export default function ClaimForm({
     }
   };
 
-  const renderClaimInfo = () => (
-    <div className="flex size-[400px] flex-col justify-between rounded-2xl border bg-white">
-      <div className="p-5">
-        <div className="flex items-center text-xs">
-          <span>You are claiming</span>
-        </div>
-        <div className="text-center text-3xl mt-5">
-          {paymentInfo && (
-            <CurrencyDisplayer
-              tokenAmount={parseFloat(
-                formatUnits(paymentInfo[1].toString(), 18)
+  const renderClaimInfo = () => {
+    const tokenSymbol = "ETH";
+
+    return (
+      <section className="flex w-full h-auto flex-col justify-between rounded-2xl border bg-background p-5">
+        <div className="flex w-full md:h-[200px] lg:h-[300px]  flex-col justify-between rounded-2xl">
+          <div className="p-5">
+            <div className="flex items-center justify-between text-xs w-full">
+              <span className="text-xl">💸👻💸</span>
+              <span>You are claiming</span>
+            </div>
+            <div className="text-center text-3xl mt-5">
+              {paymentInfo && (
+                <CurrencyDisplayer
+                  tokenAmount={parseFloat(
+                    formatUnits(paymentInfo[1].toString(), 18)
+                  )}
+                  onValueChange={function (
+                    usdAmount: number,
+                    tokenAmount: number
+                  ): void {
+                    throw new Error("Function not implemented.");
+                  }}
+                />
               )}
-              onValueChange={function (
-                usdAmount: number,
-                tokenAmount: number
-              ): void {
-                throw new Error("Function not implemented.");
-              }}
-            />
-          )}
-        </div>
-      </div>
-      <div className="mt-5 flex h-16 items-center border-t text-xs">
-        <div className="mx-5 flex w-full items-center justify-between">
-          <div className="flex flex-col">
-            <span className="font-semibold">Polygon</span>
-            <span>ETH</span>
+            </div>
           </div>
-          <ChevronDownIcon className="size-4" />
+          <div className="mt-5 flex h-16 items-center border-t text-xs">
+            <div className="flex w-full items-center justify-between">
+              <div className="flex flex-col w-full">
+                <NetworkSelector />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
+      </section>
+    );
+  };
 
   const renderInputForm = () => (
-    <div className="flex size-[400px] flex-col justify-between rounded-2xl border bg-white p-5">
-      <div className="flex flex-col mb-5">
-        <label htmlFor="claimId" className="text-xs font-semibold">
-          Enter Claim ID
+    <div className="flex w-full h-auto flex-col justify-between rounded-2xl border bg-background p-5">
+      <div className="flex  w-full md:h-[200px] lg:h-[300px] flex-col mb-5">
+        <label htmlFor="claimId" className="text-xs font-semibold font-aeonik">
+          Claim your Link Here{" "}
         </label>
         <input
           type="text"
@@ -160,26 +163,26 @@ export default function ClaimForm({
       <Button
         size={"lg"}
         onClick={handleVerify}
-        className="flex items-center gap-2 self-end"
+        className="mt-5 flex items-center gap-2 self-end w-full"
         variant={"fito"}
       >
-        Verify
-        <ChevronRightIcon className="size-4" />
+        Verify <span className="text-xl"> 🍸</span>
       </Button>
     </div>
   );
 
   return (
-    <section className="mx-auto flex flex-col items-center">
+    <section className="mx-auto h-full flex flex-col items-center">
       {claimId ? renderClaimInfo() : renderInputForm()}
       {claimId && (
         <Button
           size={"lg"}
-          className="mt-5 flex items-center gap-2 self-end"
+          className="mt-5 flex items-center gap-2 self-end w-full"
           onClick={handleClaim}
           variant={"fito"}
         >
-          <span>Claim 👻</span>
+          Claim
+          <span className="text-xl"> 👻</span>
         </Button>
       )}
       {overlayVisible && (

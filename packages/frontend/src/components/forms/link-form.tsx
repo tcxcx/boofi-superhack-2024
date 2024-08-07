@@ -5,9 +5,6 @@ import {
   ChevronRightIcon,
   ChevronUpIcon,
   CopyIcon,
-  CrossIcon,
-  InfoIcon,
-  SettingsIcon,
   XIcon,
 } from "lucide-react";
 import CurrencyDisplayer from "@/components/currency";
@@ -22,6 +19,8 @@ import { QRCode } from "react-qrcode-logo";
 import SentTable from "@/components/tables/sent-table";
 import { Input } from "@/components/ui/input";
 import { Toggle } from "@/components/ui/toggle";
+
+import NetworkSelector from "../chain-network-select";
 
 export default function LinkForm() {
   const { data: hash, writeContractAsync: createPaymentLink } =
@@ -91,10 +90,6 @@ export default function LinkForm() {
     setOverlayVisible(false);
   };
 
-  const toggleLinkSettings = () => {
-    setViewLinkSettings(!viewLinkSettings);
-  };
-
   const handlePriceTarget = (e: any) => {
     e.preventDefault();
     setPriceTarget(e.target.value);
@@ -136,54 +131,26 @@ export default function LinkForm() {
   };
 
   return (
-    <section className="mx-auto flex flex-col items-center">
-      <div className="flex size-[400px] flex-col justify-between rounded-2xl border bg-background">
-        <div className="px-5 pt-2">
+    <section className="mx-auto h-full flex flex-col items-center">
+      <div className="flex w-full md:h-[300px] lg:h-[400px] flex-col justify-between rounded-2xl border bg-background">
+        <div className="px-4 pt-2">
           <div className="flex items-center justify-between text-xs">
+            <span className="text-xl">💸👻💸</span>
             <span>You are sending</span>
-            <Button variant="ghost" size="icon" onClick={toggleLinkSettings}>
-              <SettingsIcon className="size-4" />
-            </Button>
           </div>
           <CurrencyDisplayer
             tokenAmount={tokenAmount}
             onValueChange={handleValueChange}
           />
-          {viewLinkSettings ? (
-            <>
-              <div className="flex items-center gap-2 text-xs my-2 ml-[13px]">
-                <div>Enable Chronicle price target</div>
-                <InfoIcon className="size-4" />
-              </div>
-              <Input
-                placeholder="Set price target"
-                type="number"
-                onChange={handlePriceTarget}
-              />
-              <Toggle
-                aria-label="Toggle price target"
-                onClick={togglePriceTarget}
-                className={`flex mt-2 gap-2 text-xs ${
-                  enablePriceTarget ? "text-green-500" : "text-red-500"
-                }`}
-              >
-                {enablePriceTarget ? "Enabled" : "Disabled"}
-                {enablePriceTarget ? (
-                  <CheckIcon className="size-3" />
-                ) : (
-                  <XIcon className="size-3" />
-                )}
-              </Toggle>
-            </>
-          ) : null}
         </div>
-        <div className="mt-5 flex h-16 items-center border-t text-xs">
-          <div className="mx-5 flex w-full items-center justify-between">
-            <div className="flex flex-col">
-              <span className="font-semibold">Select Destination Chain</span>
-              <span>Sepolia</span>
+        <div className="mt-4 flex h-16 items-center border-t text-xs">
+          <div className=" flex w-full items-center justify-between">
+            <div className="flex flex-col w-full">
+              <span className="inline-block font-semibold">
+                Select Destination Chain
+              </span>
+              <NetworkSelector />
             </div>
-            {/* <ChevronDownIcon className="size-4" /> */}
           </div>
         </div>
       </div>

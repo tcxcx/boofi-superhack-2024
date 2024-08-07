@@ -85,25 +85,6 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color-scheme: dark;
-  background-color: var(--color-black);
-}
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  font-family: var(--font-body);
-  transition: opacity var(--transition-quick);
-  font-family: "Violet Sans", "IBM Plex Serif", "Inconsolata", sans-serif;
-}
-
-body.inspect * {
-  outline: 1px solid var(--inspect-color) !important;
 }
 
 body:not(.user-is-tabbing) button:focus,
