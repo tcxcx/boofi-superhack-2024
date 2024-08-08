@@ -8,6 +8,7 @@ import { useWindowSize } from "@/hooks/use-window-size";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/utils";
 import BlurFade from "@/components/magicui/blur-fade";
+import { RightSidebarProps, CategoryCount } from "@/lib/types";
 
 const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
   const { width } = useWindowSize();

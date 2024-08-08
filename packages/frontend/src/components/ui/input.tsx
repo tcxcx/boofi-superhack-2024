@@ -1,5 +1,4 @@
 import * as React from "react";
-
 import { cn } from "@/utils";
 
 export interface InputProps
@@ -29,7 +28,7 @@ const InputMoney = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           className={cn(
-            "flex w-full relative justify-center text-6xl bg-transparent  py-1 shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none  disabled:cursor-not-allowed disabled:opacity-50",
+            "flex w-full relative justify-center text-6xl bg-transparent  py-1 transition-colors placeholder:text-muted-foreground focus-visible:outline-none  disabled:cursor-not-allowed disabled:opacity-50",
             className
           )}
           ref={ref}
@@ -39,6 +38,6 @@ const InputMoney = React.forwardRef<HTMLInputElement, InputProps>(
     );
   }
 );
-Input.displayName = "InputMoney";
+InputMoney.displayName = "InputMoney";
 
 export { Input, InputMoney };

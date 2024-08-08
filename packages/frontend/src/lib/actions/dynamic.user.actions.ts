@@ -5,6 +5,8 @@ import { extractCustomerIdFromUrl } from "@/utils"; // Ensure you have this util
 import { createOrUpdateAppwriteAuthUser } from "./user.actions";
 import { CombinedUserProfile } from "@/lib/types/dynamic";
 import { parseStringify } from "@/utils";
+import { DynamicUser } from "@/lib/types";
+
 const {
   APPWRITE_DATABASE_ID: DATABASE_ID,
   APPWRITE_USERS_COLLECTION_ID: USERS_COLLECTION_ID,

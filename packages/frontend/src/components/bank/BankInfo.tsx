@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
+import { AccountTypes, BankInfoProps } from "@/lib/types";
 
 import { cn, formUrlQuery, FormatAmount, getAccountTypeColors } from "@/utils";
 

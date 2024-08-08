@@ -11,6 +11,7 @@ import { createTransfer } from "@/lib/actions/dwolla.actions";
 import { createTransaction } from "@/lib/actions/transaction.actions";
 import { getBank, getBankByAccountId } from "@/lib/actions/user.actions";
 import { decryptId } from "@/utils";
+import { PaymentTransferFormProps } from "@/lib/types";
 
 import { BankDropdown } from "./BankDropdown";
 import { Button } from "@/components/ui/button";

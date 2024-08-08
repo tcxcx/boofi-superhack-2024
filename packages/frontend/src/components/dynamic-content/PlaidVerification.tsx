@@ -1,11 +1,10 @@
 import React from "react";
-import PlaidLink from "../bank/PlaidLink";
-import { CombinedUserProfile } from "@/lib/types/dynamic";
+import PlaidLink, { RequiredEnsUser } from "../bank/PlaidLink";
 
 interface PlaidVerificationProps {
   onVerified: () => void;
   onFailed: () => void;
-  user: CombinedUserProfile;
+  user: RequiredEnsUser;
 }
 
 export const PlaidVerification: React.FC<PlaidVerificationProps> = ({

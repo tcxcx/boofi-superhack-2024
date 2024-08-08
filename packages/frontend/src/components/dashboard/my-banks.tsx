@@ -1,10 +1,9 @@
-// /src/components/dashboard/my-banks.tsx
-
 import React, { useEffect, useState } from "react";
 import BankCard from "@/components/bank/BankCard";
 import HeaderBox from "@/components/bank/HeaderBox";
 import { getAccounts } from "@/lib/actions/bank.actions";
 import { CombinedUserProfile } from "@/lib/types/dynamic";
+import { Account } from "@/lib/types";
 
 interface MyBanksProps {
   userId: string;

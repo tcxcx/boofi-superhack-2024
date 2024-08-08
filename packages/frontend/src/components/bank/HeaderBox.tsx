@@ -1,6 +1,7 @@
 "use client";
 
 import BlurFade from "@/components/magicui/blur-fade";
+import { HeaderBoxProps } from "@/lib/types";
 
 const HeaderBox = ({
   type = "title",

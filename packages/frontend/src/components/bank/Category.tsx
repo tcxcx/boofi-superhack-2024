@@ -1,9 +1,8 @@
-// src/components/bank/Category.tsx
-
 import Image from "next/image";
 import { topCategoryStyles } from "@/lib/constants";
 import { cn } from "@/utils";
 import { Progress } from "@/components/ui/progress";
+import { CategoryProps } from "@/lib/types";
 
 const Category = ({ category }: CategoryProps) => {
   const {

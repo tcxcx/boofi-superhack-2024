@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
 import path from "path";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
+  // Explicitly type the return value
   const { userId, cryptoBalances } = await req.json();
 
   if (!userId) {
@@ -20,7 +21,6 @@ export async function POST(req: NextRequest) {
   );
 
   return new Promise((resolve) => {
-    // Execute the Python script in the conda environment
     const pythonProcess = spawn("conda", [
       "run",
       "-n",
@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
 
           const jsonOutput = JSON.parse(outputData);
 
-          // Perform detailed validation
           if (
             typeof jsonOutput.userId !== "string" ||
             typeof jsonOutput.defiPotentialScore !== "number" ||

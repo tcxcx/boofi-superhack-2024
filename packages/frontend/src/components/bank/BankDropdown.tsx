@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
-
+import { BankDropdownProps } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { formUrlQuery, FormatAmount } from "@/utils";
+import { Account } from "@/lib/types";
 
 export const BankDropdown = ({
   accounts = [],

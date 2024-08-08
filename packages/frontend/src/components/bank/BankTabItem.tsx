@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-
+import { BankTabItemProps } from "@/lib/types";
 import { cn, formUrlQuery } from "@/utils";
 
 export const BankTabItem = ({ account, appwriteItemId }: BankTabItemProps) => {

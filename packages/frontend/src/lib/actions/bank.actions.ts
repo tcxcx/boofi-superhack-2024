@@ -11,7 +11,14 @@ import {
 
 import { plaidClient } from "../plaid";
 import { parseStringify } from "@/utils";
-
+import {
+  getAccountsProps,
+  Bank,
+  getAccountProps,
+  Transaction,
+  getInstitutionProps,
+  getTransactionsProps,
+} from "@/lib/types";
 import { getTransactionsByBankId } from "./transaction.actions";
 import { getBanks, getBank } from "./user.actions";
 

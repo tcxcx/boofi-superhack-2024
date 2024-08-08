@@ -389,3 +389,23 @@ declare interface VerifiedCredential {
   oauthAccountId?: string;
   walletProperties?: Record<string, any>;
 }
+
+declare interface PaymentInfo {
+  link: string;
+  chainId: number;
+  depositIndex: number;
+  contractVersion: string;
+  password: string;
+  senderAddress: string;
+  tokenType: string;
+  tokenAddress: string;
+  tokenDecimals: number;
+  tokenSymbol: string;
+  tokenName: string;
+  tokenAmount: string;
+  tokenId: number;
+  claimed: boolean;
+  depositDate: string;
+  tokenURI: string;
+  transactionHash: string;
+}

@@ -10,7 +10,16 @@ import {
   ProcessorTokenCreateRequestProcessorEnum,
   Products,
 } from "plaid";
-
+import {
+  getUserInfoProps,
+  DynamicUser,
+  createBankAccountProps,
+  User,
+  exchangePublicTokenProps,
+  getBankProps,
+  getBankByAccountIdProps,
+  getBanksProps,
+} from "@/lib/types";
 import { plaidClient } from "@/lib/plaid";
 import { revalidatePath } from "next/cache";
 import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";

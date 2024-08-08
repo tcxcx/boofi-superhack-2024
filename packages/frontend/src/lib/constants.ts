@@ -10,6 +10,8 @@ export const isServer = !isClient;
 export const githubUrl = "https://github.com/hackathon-2024";
 export const APP_NAME = "BooFi Finance";
 export const APP_LOGO_URL = "/images/BooFi-icon.png";
+export const PEANUT_API_URL =
+  process.env.PEANUT_API_URL || "https://api.peanut.to/";
 
 if (typeof process.env.NEXT_PUBLIC_SITE_URL !== "string") {
   throw new Error(

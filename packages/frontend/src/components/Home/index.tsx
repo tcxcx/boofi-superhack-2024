@@ -1,16 +1,53 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Translations } from "@/lib/types/translations";
 import PaymentLink from "../payment-link-card";
-import { useAccount } from "wagmi";
+import { useAccount, useConnect, useSwitchChain } from "wagmi";
+import { getNetwork } from "@dynamic-labs/sdk-react-core";
+import { celoAlfajores } from "viem/chains";
+
 interface HomeContentProps {
   translations: Translations["Home"];
 }
 
+// Extend the existing IEthereum interface instead of redeclaring Window
+declare global {
+  interface IEthereum {
+    isMiniPay?: boolean;
+  }
+}
+
 export const HomeContent: React.FC<HomeContentProps> = ({ translations }) => {
   const { isConnected } = useAccount();
-  const [hoveredCharacter, setHoveredCharacter] = useState<string | null>(null);
+  const { connect, connectors } = useConnect();
+  const { switchChain } = useSwitchChain();
+  const [isMiniPay, setIsMiniPay] = useState(false);
+
+  useEffect(() => {
+    const checkMiniPay = async () => {
+      if (
+        typeof window !== "undefined" &&
+        window.ethereum &&
+        (window.ethereum as IEthereum).isMiniPay
+      ) {
+        setIsMiniPay(true);
+
+        const connector = connectors[0];
+        if (connector) {
+          await connect({ connector });
+
+          // Replace `null` with the actual walletConnector instance you're using
+          const networkId = await getNetwork(null);
+          if (networkId && networkId !== celoAlfajores.id) {
+            await switchChain({ chainId: celoAlfajores.id });
+          }
+        }
+      }
+    };
+
+    checkMiniPay();
+  }, [connect, connectors, switchChain]);
 
   const renderSlogan = () => (
     <p className="text-lg mb-8">
@@ -24,7 +61,7 @@ export const HomeContent: React.FC<HomeContentProps> = ({ translations }) => {
     </p>
   );
 
-  if (!isConnected) {
+  if (!isConnected && !isMiniPay) {
     return (
       <div className="p-4 overflow-hidden min-h-screen flex flex-col items-center justify-center">
         <div className="relative flex flex-col items-center justify-center w-full ">

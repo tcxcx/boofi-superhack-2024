@@ -17,7 +17,7 @@ const chainIcons: { [key: number]: string } = {
   10: "/icons/optimism-ethereum-op-logo.svg",
   11155420: "/icons/optimism-ethereum-op-logo.svg", // optimismSepolia
   42220: "/icons/celo-celo-logo.svg",
-  //   42_220: "/icons/celo-celo-logo.svg", // celoAlfajores
+  44787: "/icons/celo-celo-logo.svg", // celoAlfajores
   8453: "/icons/base-logo-in-blue.svg",
   84532: "/icons/base-logo-in-blue.svg", // baseSepolia
   34443: "/icons/mode-logo.svg",

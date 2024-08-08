@@ -1,75 +1,178 @@
 import { useState, ChangeEvent, useEffect } from "react";
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  PiggyBankIcon,
-  XIcon,
-} from "lucide-react";
+import { ChevronRightIcon, PiggyBankIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  useAccount,
-  useReadContract,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from "wagmi";
-import { linksContractABI, linksContractAddress } from "@/lib/constants";
-import { formatUnits } from "viem";
-import CurrencyDisplayer from "@/components/currency";
 import { AnimatePresence, motion } from "framer-motion";
 import { FadeText } from "@/components/magicui/fade-text";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import NetworkSelector from "../chain-network-select";
+import { useDeezNuts } from "@/hooks/use-peanut";
+import { getLinkDetails } from "@squirrel-labs/peanut-sdk";
+import PaymentDetails from "./payment-details";
+import { toast } from "../ui/use-toast";
+import confetti from "canvas-confetti";
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { Chain } from "viem/chains";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+const BLOCKSCOUT_EXPLORERS: Record<number, string> = {
+  1: "https://eth.blockscout.com",
+  10: "https://optimism.blockscout.com",
+  420: "https://optimism-sepolia.blockscout.com",
+  42220: "https://celo.blockscout.com",
+  44787: "https://alfajores.blockscout.com",
+  8453: "https://base.blockscout.com",
+  84532: "https://base-sepolia.blockscout.com",
+  34443: "https://mode.blockscout.com",
+  919: "https://mode-testnet.blockscout.com",
+  11155111: "https://sepolia.blockscout.com",
+};
+
+export function getBlockExplorerUrl(chain: Chain): string {
+  return (
+    BLOCKSCOUT_EXPLORERS[chain.id] || chain.blockExplorers?.default.url || ""
+  );
+}
+
+export function getBlockExplorerUrlByChainId(chainId: number): string {
+  return BLOCKSCOUT_EXPLORERS[chainId] || "";
+}
+
+interface IGetLinkDetailsResponse {
+  link: string;
+  chainId: string;
+  depositIndex: number;
+  contractVersion: string;
+  password: string;
+  sendAddress: string;
+  tokenType: string;
+  tokenAddress: string;
+  tokenDecimals: number;
+  tokenSymbol: string;
+  TokenName: string;
+  tokenAmount: string;
+  tokenId: number;
+  claimed: boolean;
+  depositDate: string;
+  tokenURI: string;
+}
+
+interface ExtendedPaymentInfo {
+  chainId: number | string;
+  tokenSymbol: string;
+  tokenAmount: string;
+  senderAddress: string;
+  claimed: boolean;
+  depositDate: string;
+  transactionHash?: string;
+  depositIndex: number;
+}
+
 export default function ClaimForm({
   claimId: initialClaimId,
 }: {
   claimId: string | undefined;
 }) {
-  const { address } = useAccount();
-  const { data: hash, writeContractAsync: claimPaymentLink } =
-    useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({ hash });
-
+  const {
+    truncateHash,
+    copyToClipboard,
+    claimPayLink,
+    isLoading: isPeanutLoading,
+  } = useDeezNuts();
   const [overlayVisible, setOverlayVisible] = useState(false);
-  const [transactionDetails, setTransactionDetails] = useState<any>(null);
-  const [claimId, setClaimId] = useState<string | undefined>(initialClaimId);
-  const [inputId, setInputId] = useState<string>("");
-  const [paymentInfo, setPaymentInfo] = useState<any>();
+  const [transactionDetails, setTransactionDetails] = useState<string | null>(
+    null
+  );
+  const [inputLink, setInputLink] = useState<string>("");
+  const [paymentInfo, setPaymentInfo] = useState<ExtendedPaymentInfo | null>(
+    null
+  );
 
-  const truncateHash = (hash: string) => {
-    if (hash.length > 10) {
-      return hash.slice(0, 7) + "..." + hash.slice(-5);
-    }
-    return hash;
-  };
-
-  const { data } = useReadContract({
-    address: linksContractAddress,
-    abi: linksContractABI,
-    functionName: "paymentLinks",
-    args: [claimId],
-  });
+  const [details, setDetails] = useState<IGetLinkDetailsResponse | null>(null);
 
   useEffect(() => {
-    if (data) {
-      setPaymentInfo(data);
+    if (paymentInfo?.claimed) {
+      setOverlayVisible(true);
     }
-  }, [data]);
+  }, [paymentInfo?.claimed]);
+
+  const fetchLinkDetails = async (link: string) => {
+    try {
+      const details = (await getLinkDetails({
+        link,
+      })) as unknown as IGetLinkDetailsResponse;
+      setDetails(details);
+      const extendedPaymentInfo: ExtendedPaymentInfo = {
+        chainId: details.chainId,
+        tokenSymbol: details.tokenSymbol,
+        tokenAmount: details.tokenAmount,
+        senderAddress: details.sendAddress,
+        claimed: details.claimed,
+        depositDate: details.depositDate,
+        depositIndex: details.depositIndex,
+      };
+
+      setPaymentInfo(extendedPaymentInfo);
+    } catch (error: any) {
+      console.error("Error fetching link details:", error.message);
+      toast({
+        title: "Error",
+        description: "An error occurred while fetching the link details.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setInputId(e.target.value);
+    setInputLink(e.target.value);
+  };
+
+  const handlePasteClick = async () => {
+    const text = await navigator.clipboard.readText();
+    setInputLink(text);
   };
 
   const handleVerify = () => {
-    setClaimId(inputId);
+    fetchLinkDetails(inputLink);
   };
 
-  const handleClaim = (e: any) => {
-    if (paymentInfo[2]) {
-      alert("Already claimed");
-    } else {
-      handleTransaction(e);
+  const handleSuccess = async () => {
+    // Trigger confetti animation
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
+
+    // Fetch and update the latest link details
+    if (inputLink) {
+      await fetchLinkDetails(inputLink);
+    }
+
+    // Set the overlay visible
+    setOverlayVisible(true);
+  };
+
+  const handleClaim = async () => {
+    if (paymentInfo?.claimed) {
+      toast({
+        title: "Already claimed",
+        description: "You have already claimed this link.",
+      });
+    } else if (paymentInfo && details) {
+      try {
+        const txHash = await claimPayLink(details.link, handleSuccess);
+        setTransactionDetails(txHash);
+        setPaymentInfo((prevInfo) =>
+          prevInfo
+            ? { ...prevInfo, transactionHash: txHash, claimed: true }
+            : null
+        );
+      } catch (error) {
+        console.error("Error claiming payment link:", error);
+      }
     }
   };
 
@@ -77,88 +180,50 @@ export default function ClaimForm({
     setOverlayVisible(false);
   };
 
-  const texts = [
-    "Waiting for confirmation",
-    "Confirming",
-    "Transaction confirmed",
-  ];
+  const texts = ["Confetti... 🎉", "Waiting for confirmation", "Confirming"];
   let currentText = texts[0];
 
-  if (isConfirming) {
-    currentText = texts[1];
-  } else if (isConfirmed) {
-    currentText = texts[2];
-  }
-
-  const handleTransaction = async (e: any) => {
-    setOverlayVisible(true);
-    e.preventDefault();
-
-    try {
-      const tx = await claimPaymentLink({
-        address: linksContractAddress,
-        abi: linksContractABI,
-        functionName: "claimPaymentLink",
-        args: [claimId, address],
-      });
-      setTransactionDetails(tx);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const renderClaimInfo = () => {
-    const tokenSymbol = "ETH";
-
-    return (
-      <section className="flex w-full h-auto flex-col justify-between rounded-2xl border bg-background p-5">
-        <div className="flex w-full md:h-[200px] lg:h-[300px]  flex-col justify-between rounded-2xl">
-          <div className="p-5">
-            <div className="flex items-center justify-between text-xs w-full">
-              <span className="text-xl">💸👻💸</span>
-              <span>You are claiming</span>
-            </div>
-            <div className="text-center text-3xl mt-5">
-              {paymentInfo && (
-                <CurrencyDisplayer
-                  tokenAmount={parseFloat(
-                    formatUnits(paymentInfo[1].toString(), 18)
-                  )}
-                  onValueChange={function (
-                    usdAmount: number,
-                    tokenAmount: number
-                  ): void {
-                    throw new Error("Function not implemented.");
-                  }}
-                />
-              )}
-            </div>
+  const renderClaimInfo = () => (
+    <section className="flex w-full h-auto flex-col justify-between rounded-2xl border bg-background p-5">
+      <div className="flex w-full md:h-[200px] lg:h-[300px] flex-col justify-between rounded-2xl">
+        <div className="p-5">
+          <div className="flex items-center justify-between text-xs w-full">
+            <span className="text-xl">💸👻💸</span>
+            <span>You are claiming</span>
           </div>
-          <div className="mt-5 flex h-16 items-center border-t text-xs">
-            <div className="flex w-full items-center justify-between">
-              <div className="flex flex-col w-full">
-                <NetworkSelector />
-              </div>
-            </div>
+          <div className="text-center flex py-2">
+            {paymentInfo && (
+              <>
+                <PaymentDetails paymentInfo={paymentInfo} />
+              </>
+            )}
           </div>
         </div>
-      </section>
-    );
-  };
+      </div>
+    </section>
+  );
 
   const renderInputForm = () => (
     <div className="flex w-full h-auto flex-col justify-between rounded-2xl border bg-background p-5">
-      <div className="flex  w-full md:h-[200px] lg:h-[300px] flex-col mb-5">
-        <label htmlFor="claimId" className="text-xs font-semibold font-aeonik">
+      <div className="flex w-full md:h-[200px] lg:h-[300px] flex-col mb-5">
+        <label
+          htmlFor="claimLink"
+          className="text-xs font-semibold font-aeonik"
+        >
           Claim your Link Here{" "}
         </label>
-        <input
-          type="text"
-          id="claimId"
-          value={inputId}
-          onChange={handleInputChange}
-          className="mt-1 rounded border px-3 py-2"
-        />
+        <div className="flex">
+          <input
+            type="text"
+            id="claimLink"
+            value={inputLink}
+            onChange={handleInputChange}
+            className="mt-1 rounded border px-3 py-2 flex-grow"
+          />
+          <Button onClick={handlePasteClick} className="ml-2">
+            Paste
+          </Button>
+        </div>
       </div>
       <Button
         size={"lg"}
@@ -173,13 +238,14 @@ export default function ClaimForm({
 
   return (
     <section className="mx-auto h-full flex flex-col items-center">
-      {claimId ? renderClaimInfo() : renderInputForm()}
-      {claimId && (
+      {paymentInfo ? renderClaimInfo() : renderInputForm()}
+      {paymentInfo && (
         <Button
           size={"lg"}
           className="mt-5 flex items-center gap-2 self-end w-full"
           onClick={handleClaim}
           variant={"fito"}
+          disabled={paymentInfo.claimed || isPeanutLoading}
         >
           Claim
           <span className="text-xl"> 👻</span>
@@ -197,7 +263,7 @@ export default function ClaimForm({
             <div className="flex flex-col items-center gap-10">
               <AnimatePresence mode="wait">
                 <FadeText
-                  key={currentText} // Key prop to trigger re-render
+                  key={currentText}
                   className="text-4xl font-bold text-black dark:text-white"
                   direction="up"
                   framerProps={{
@@ -206,42 +272,7 @@ export default function ClaimForm({
                   text={currentText}
                 />
               </AnimatePresence>
-              {isConfirmed ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1 }}
-                >
-                  <div className="flex size-[400px] flex-col justify-between rounded-2xl border bg-white">
-                    <div className="p-5">
-                      <div className="flex items-center text-xs">
-                        <span>Link Claimed Succesfully</span>
-                      </div>
-                      <div className="flex justify-center">
-                        <PiggyBankIcon className="h-[250px] size-[100px] stroke-1 opacity-10" />
-                      </div>
-                    </div>
-                    <div className="mt-5 flex h-16 items-center border-t text-xs">
-                      <div className="mx-5 flex w-full items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="font-semibold">
-                            Transaction Hash:
-                          </span>
-                          <span>{truncateHash(transactionDetails)}</span>
-                        </div>
-                        <Link
-                          href={`https://eth-sepolia.blockscout.com/tx/${transactionDetails}`}
-                          target="_blank"
-                          className="flex items-center"
-                        >
-                          <span>View in Blockscout</span>
-                          <ChevronRightIcon className="size-4" />
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ) : (
+              {!paymentInfo?.claimed && isPeanutLoading ? (
                 <div role="status">
                   <svg
                     aria-hidden="true"
@@ -261,6 +292,41 @@ export default function ClaimForm({
                   </svg>
                   <span className="sr-only">Loading...</span>
                 </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1 }}
+                >
+                  <div className="flex size-[400px] flex-col justify-between rounded-2xl border bg-white">
+                    <div className="p-5">
+                      <div className="flex items-center text-xs">
+                        <span>Link Claimed Successfully</span>
+                      </div>
+                      <div className="p-5">
+                        {paymentInfo && (
+                          <PaymentDetails paymentInfo={paymentInfo} />
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-5 flex h-16 items-center border-t text-xs">
+                      <div className="mx-5 flex w-full items-center justify-end">
+                        <div className="flex flex-row">
+                          <Link
+                            href={`${getBlockExplorerUrlByChainId(
+                              paymentInfo?.chainId as number
+                            )}/tx/${transactionDetails}`}
+                            target="_blank"
+                            className="flex items-center"
+                          >
+                            <span>View in Blockscout</span>
+                            <ChevronRightIcon className="size-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
               )}
             </div>
           </div>

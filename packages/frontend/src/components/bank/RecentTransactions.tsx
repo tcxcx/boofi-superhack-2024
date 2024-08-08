@@ -5,6 +5,7 @@ import BankInfo from "./BankInfo";
 import TransactionsTable from "./TransactionsTable";
 import { Pagination } from "./Pagination";
 import BlurFade from "../magicui/blur-fade";
+import { Transaction, Account } from "@/lib/types";
 
 interface RecentTransactionsProps {
   accounts: Account[];

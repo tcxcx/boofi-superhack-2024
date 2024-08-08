@@ -24,3 +24,7 @@ export function getBlockExplorerUrl(chain: Chain): string {
     BLOCKSCOUT_EXPLORERS[chain.id] || chain.blockExplorers?.default.url || ""
   );
 }
+
+export function getBlockExplorerUrlByChainId(chainId: number): string {
+  return BLOCKSCOUT_EXPLORERS[chainId] || "";
+}

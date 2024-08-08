@@ -15,6 +15,11 @@ import {
   getTransactionStatus,
   removeSpecialCharacters,
 } from "@/utils";
+import {
+  CategoryBadgeProps,
+  TransactionTableProps,
+  Transaction,
+} from "@/lib/types";
 
 const CategoryBadge = ({ category }: CategoryBadgeProps) => {
   const { borderColor, backgroundColor, textColor, chipBackgroundColor } =

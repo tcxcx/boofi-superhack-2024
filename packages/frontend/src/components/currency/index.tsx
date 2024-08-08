@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,38 +14,83 @@ import { Eth } from "@styled-icons/crypto/Eth";
 import { Usdc } from "@styled-icons/crypto/Usdc";
 import { Dai } from "@styled-icons/crypto/Dai";
 import { Usdt } from "@styled-icons/crypto/Usdt";
-import { z } from "zod";
-import { InputMoney } from "@/components/ui/input";
+import { InputMoney } from "../ui/input";
+import {
+  useTokenBalances,
+  useUserWallets,
+  getNetwork,
+} from "@dynamic-labs/sdk-react-core";
+import { useAccount, useBalance } from "wagmi";
+import { getChainsForEnvironment } from "@/store/supportedChains";
+import { calculateChainBalances } from "@/utils/multiChainBalance";
+import { formatUnits } from "viem";
+import { useWindowSize } from "@/hooks/use-window-size";
+
+import CusdIcon from "/icons/celo-dollar_large.webp"; // Importing cUSD icon
 
 interface CurrencyDisplayerProps {
   tokenAmount: number;
   onValueChange: (usdAmount: number, tokenAmount: number) => void;
+  initialAmount?: number;
+  availableTokens: Record<string, string>;
+  onTokenSelect: (token: string) => void;
+  currentNetwork: number | null;
 }
 
-const tokenPriceInUSD = 0.02959; // Example token price
+const chainIcons: { [key: number]: string } = {
+  1: "/icons/ethereum-eth-logo.svg",
+  11155111: "/icons/ethereum-eth-logo.svg",
+  10: "/icons/optimism-ethereum-op-logo.svg",
+  11155420: "/icons/optimism-ethereum-op-logo.svg",
+  42220: "/icons/celo-celo-logo.svg",
+  8453: "/icons/base-logo-in-blue.svg",
+  84532: "/icons/base-logo-in-blue.svg",
+  34443: "/icons/mode-logo.svg",
+  919: "/icons/mode-logo.svg",
+};
 
-const currencySchema = z.object({
-  amount: z.number().min(0, "Amount must be a positive number"),
-  token: z.string(),
-});
+type ChainId =
+  | 1
+  | 11155111
+  | 10
+  | 11155420
+  | 42220
+  | 8453
+  | 84532
+  | 34443
+  | 919
+  | undefined;
 
 const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
   tokenAmount,
   onValueChange,
+  initialAmount = 0,
+  availableTokens,
+  onTokenSelect,
+  currentNetwork,
 }) => {
+  const tokenPriceInUSD = 0.02959;
   const [usdAmount, setUsdAmount] = useState<number>(0);
   const [selectedToken, setSelectedToken] = useState<string>("ETH");
-  const [inputValue, setInputValue] = useState<number>(0);
-  const [errors, setErrors] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState<string>(
+    initialAmount.toFixed(3)
+  );
+  const { width } = useWindowSize();
 
-  useEffect(() => {
-    const usdValue = tokenAmount * tokenPriceInUSD;
-    setUsdAmount(isFinite(usdValue) ? parseFloat(usdValue.toFixed(2)) : 0);
-    onValueChange(
-      isFinite(usdValue) ? parseFloat(usdValue.toFixed(2)) : 0,
-      tokenAmount
-    );
-  }, [tokenAmount]);
+  const isMobile = width && width <= 768;
+
+  const { tokenBalances, isLoading, error } = useTokenBalances();
+  const userWallets = useUserWallets();
+  const { address } = useAccount();
+  const { data: balance } = useBalance({
+    address,
+    chainId: currentNetwork as ChainId,
+  });
+
+  const supportedChains = getChainsForEnvironment();
+
+  const { chainBalances, totalBalanceUSD } =
+    calculateChainBalances(tokenBalances);
 
   const EthIcon = styled(Eth)`
     color: #627eea;
@@ -81,26 +126,100 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
 
   const handleSelectChange = (value: string) => {
     setSelectedToken(value.toUpperCase());
+    onTokenSelect(value.toUpperCase());
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(event.target.value);
-    const result = currencySchema.safeParse({
-      amount: value,
-      token: selectedToken,
-    });
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target;
+    const regex = /^\d*\.?\d{0,3}$/;
 
-    if (result.success) {
-      setErrors(null);
+    if (regex.test(value) || value === "") {
       setInputValue(value);
-      const usdValue = value * tokenPriceInUSD;
+      updateValues(value);
+    }
+  };
+
+  const updateValues = (value: string) => {
+    const numericValue = parseFloat(value);
+    if (!isNaN(numericValue)) {
+      const usdValue = numericValue * tokenPriceInUSD;
       setUsdAmount(isFinite(usdValue) ? parseFloat(usdValue.toFixed(2)) : 0);
       onValueChange(
         isFinite(usdValue) ? parseFloat(usdValue.toFixed(2)) : 0,
-        value
+        numericValue
       );
     } else {
-      setErrors(result.error.errors[0].message);
+      onValueChange(0, 0);
+    }
+  };
+
+  const getTokenSymbolForNetwork = (baseSymbol: string) => {
+    if (currentNetwork === 84532 && baseSymbol === "ETH") {
+      return "ETH Sepolia";
+    }
+    return baseSymbol;
+  };
+
+  const getAvailableBalance = () => {
+    const currentChainBalance = chainBalances[currentNetwork?.toString() || ""];
+    const tokenBalance = currentChainBalance?.tokens.find(
+      (token) => token.symbol === selectedToken
+    );
+    return selectedToken === "ETH"
+      ? balance
+        ? parseFloat(formatUnits(balance.value, balance.decimals))
+        : 0
+      : tokenBalance?.balance
+      ? parseFloat(tokenBalance.balance.toString())
+      : 0;
+  };
+
+  const handleMaxClick = () => {
+    const maxBalance = getAvailableBalance().toFixed(3);
+    setInputValue(maxBalance);
+    updateValues(maxBalance);
+  };
+
+  const renderAvailableBalance = () => {
+    if (isLoading) {
+      return <p className="text-xs">Loading balance...</p>;
+    }
+    if (error) {
+      return <p className="text-xs text-red-500">Error fetching balance</p>;
+    }
+    const displayBalance = getAvailableBalance().toFixed(3);
+    return (
+      <>
+        <Button variant={"link"} className="text-xs" onClick={handleMaxClick}>
+          Available balance (Max):
+        </Button>
+        <Button variant={"link"} className="text-xs" onClick={handleMaxClick}>
+          {displayBalance} {getTokenSymbolForNetwork(selectedToken)}{" "}
+        </Button>
+      </>
+    );
+  };
+
+  const getTokenIcon = (token: string) => {
+    switch (token.toUpperCase()) {
+      case "USDC":
+        return <UsdcIcon size={20} />;
+      case "DAI":
+        return <DaiIcon size={20} />;
+      case "USDT":
+        return <UsdtIcon size={20} />;
+      case "CUSD":
+        return (
+          <img
+            src="/icons/celo-dollar_large.webp"
+            alt="cUSD"
+            className="inline-block w-4 h-4 mr-2"
+          />
+        );
+      case "ETH":
+        return <EthIcon size={20} />;
+      default:
+        return null;
     }
   };
 
@@ -109,50 +228,52 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
       <div className="relative mb-2 text-center text-4xl">
         <div className="relative flex justify-center text-6xl">
           <InputMoney
-            placeholder="$0"
+            placeholder="0.000"
             value={inputValue}
             onChange={handleInputChange}
             className="text-center w-full"
           />
         </div>
-        {errors && <div className="text-red-500 text-xs">{errors}</div>}
-        <div className="flex justify-between mt-2 w-full">
-          <Button variant={"link"} className="text-xs">
-            Available balance: {tokenAmount}{" "}
-            <span className="uppercase ml-1">{selectedToken}</span>
-          </Button>
-          <Button variant={"link"} className="text-xs uppercase">
-            Max
-          </Button>
-        </div>
-        <div className="mx-auto mt-2 inline-block text-xs">
-          <Select onValueChange={handleSelectChange}>
-            <SelectTrigger className="w-auto justify-between px-4 space-x-2 mx-auto mt-2">
-              <SelectValue placeholder="Select a currency" />
-            </SelectTrigger>
-            <SelectContent className="w-full justify-between">
-              <SelectGroup className="justify-stretch">
-                <SelectLabel>Stablecoins</SelectLabel>
-                <SelectItem value="usdc">
-                  <UsdcIcon size={20} /> USDC
-                </SelectItem>
-                <SelectItem value="dai" disabled>
-                  <DaiIcon size={20} /> DAI
-                </SelectItem>
-                <SelectItem value="usdt" disabled>
-                  <UsdtIcon size={20} /> USDT
-                </SelectItem>
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel>Cryptocurrencies</SelectLabel>
-                <SelectItem value="eth">
-                  <EthIcon size={20} /> Ethereum (ETH)
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
+      <div className="mx-auto mt-2 block text-xs w-full items-center justify-between">
+        {renderAvailableBalance()}
+      </div>
+
+      <Select onValueChange={handleSelectChange}>
+        <SelectTrigger className="w-full border-transparent flex justify-between">
+          <SelectValue>
+            {selectedToken && currentNetwork && (
+              <div className="flex items-center">
+                <img
+                  src={chainIcons[currentNetwork]}
+                  alt={
+                    supportedChains.find((chain) => chain.id === currentNetwork)
+                      ?.name || "Ethereum"
+                  }
+                  className="inline-block w-4 h-4 mr-2"
+                />
+                {getTokenSymbolForNetwork(selectedToken)}
+              </div>
+            )}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent className="w-full justify-between">
+          <SelectGroup className="justify-stretch">
+            <SelectLabel>Stablecoins</SelectLabel>
+            {Object.keys(availableTokens).map((token) => (
+              <SelectItem key={token} value={token.toLowerCase()}>
+                {getTokenIcon(token)} {token}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+          <SelectGroup>
+            <SelectLabel>Cryptocurrencies</SelectLabel>
+            <SelectItem value="eth">
+              <EthIcon size={20} /> {getTokenSymbolForNetwork("ETH")}
+            </SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </div>
   );
 };
