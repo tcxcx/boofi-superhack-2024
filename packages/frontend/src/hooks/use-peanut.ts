@@ -3,6 +3,10 @@ import peanut, {
   getRandomString,
   interfaces as peanutInterfaces,
   claimLinkGasless,
+  claimLinkXChainGasless,
+  generateKeysFromString,
+  getRawParamsFromLink,
+  interfaces,
 } from "@squirrel-labs/peanut-sdk";
 import {
   useAccount,
@@ -45,12 +49,7 @@ export const useDeezNuts = () => {
   const { setLoading, setError } = useTransactionStore();
   const { toast } = useToast();
   const locale = useLocale();
-
-  const { chain: currentChain } = useAccount();
-  const { switchChainAsync } = useSwitchChain();
-  const { signTypedDataAsync } = useSignTypedData();
-  const { sendTransactionAsync } = useSendTransaction();
-  const config = useConfig();
+  const [crossChainDetails, setCrossChainDetails] = useState<any>([]);
 
   const generatePassword = async () => {
     try {
@@ -87,6 +86,25 @@ export const useDeezNuts = () => {
     checkMiniPayAndNetwork();
   }, [userWallets, isMobile]);
 
+  const fetchAndSetCrossChainDetails = async () => {
+    const response = await fetch("https://apiplus.squidrouter.com/v2/chains", {
+      headers: {
+        "x-integrator-id": "11CBA45B-5EE9-4331-B146-48CCD7ED4C7C",
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Squid: Network response was not ok");
+    }
+    const data = await response.json();
+
+    setCrossChainDetails(data.chains);
+  };
+
+  useEffect(() => {
+    fetchAndSetCrossChainDetails();
+  }, []);
+  console.log("CrossChainDetails", crossChainDetails);
+
   const getChainConfig = (chainId: number) => {
     const supportedChains = getChainsForEnvironment();
     const chainConfig = supportedChains.find((c) => c.id === chainId);
@@ -100,7 +118,7 @@ export const useDeezNuts = () => {
     if (typeof window !== "undefined" && window.ethereum) {
       let walletClient = createWalletClient({
         transport: custom(window.ethereum),
-        chain: getChainConfig(currentChainId || 44787), // Celo Alfajores chain config
+        chain: getChainConfig(currentChainId || 44787),
       });
 
       let [address] = await walletClient.getAddresses();
@@ -237,7 +255,9 @@ export const useDeezNuts = () => {
     onInProgress?: () => void,
     onSuccess?: () => void,
     onFailed?: (error: Error) => void,
-    onFinished?: () => void
+    onFinished?: () => void,
+    isMultiChain: boolean = false,
+    destinationChainId?: string
   ) => {
     setIsLoading(true);
     try {
@@ -508,6 +528,66 @@ export const useDeezNuts = () => {
     }
   };
 
+  const claimPayLinkXChain = async (
+    link: string,
+    destinationChainId: string,
+    destinationToken: string,
+    onInProgress?: () => void,
+    onSuccess?: () => void,
+    onFailed?: (error: Error) => void,
+    onFinished?: () => void
+  ) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const userAddress =
+        isMobile && isMiniPay ? await getUserAddress() : primaryWallet?.address;
+
+      if (!userAddress) {
+        throw new Error(
+          "User address is not available. Make sure the user is connected."
+        );
+      }
+
+      const claimedLinkResponse = await claimLinkXChainGasless({
+        link,
+        APIKey: PEANUTAPIKEY,
+        recipientAddress: userAddress as `0x${string}`,
+        destinationChainId, // id of a supported destination chain.
+        destinationToken, // optional. address of the token on the destination chain, 0x00..00 for native token. If not specified, the address of the token on the source chain is used.
+        isMainnet: true,
+        slippage: 1,
+      });
+
+      console.log(claimedLinkResponse.txHash);
+      toast({
+        title: "Cross-chain transaction sent",
+        description: `Your transaction was claimed with hash ${claimedLinkResponse.txHash}. This may take a few minutes to confirm.`,
+        variant: "default",
+      });
+      onInProgress?.();
+      onSuccess?.();
+
+      return claimedLinkResponse.txHash;
+    } catch (error: any) {
+      console.error("Error claiming cross-chain paylink:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      setError(errorMessage);
+      toast({
+        title: "Error claiming cross-chain link",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      onFailed?.(error);
+      throw error;
+    } finally {
+      setLoading(false);
+      onFinished?.();
+    }
+  };
+
   const copyToClipboard = (link: string) => {
     navigator.clipboard
       .writeText(link)
@@ -544,6 +624,7 @@ export const useDeezNuts = () => {
     currentChainId,
     address,
     createPayLink,
+    claimPayLinkXChain,
     claimPayLink,
     copyToClipboard,
     truncateHash,

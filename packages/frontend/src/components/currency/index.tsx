@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -15,18 +15,15 @@ import { Usdc } from "@styled-icons/crypto/Usdc";
 import { Dai } from "@styled-icons/crypto/Dai";
 import { Usdt } from "@styled-icons/crypto/Usdt";
 import { InputMoney } from "../ui/input";
-import {
-  useTokenBalances,
-  useUserWallets,
-  getNetwork,
-} from "@dynamic-labs/sdk-react-core";
+import { useTokenBalances, useUserWallets } from "@dynamic-labs/sdk-react-core";
 import { useAccount, useBalance } from "wagmi";
 import { getChainsForEnvironment } from "@/store/supportedChains";
 import { calculateChainBalances } from "@/utils/multiChainBalance";
 import { formatUnits } from "viem";
 import { useWindowSize } from "@/hooks/use-window-size";
-
-import CusdIcon from "/icons/celo-dollar_large.webp"; // Importing cUSD icon
+import { useAuthStore } from "@/store/authStore"; // Import zustand store
+import { useMinipayBalances } from "@/hooks/use-minipay-balance"; // Import custom hook
+import { ChainId } from "@/lib/types";
 
 interface CurrencyDisplayerProps {
   tokenAmount: number;
@@ -49,18 +46,6 @@ const chainIcons: { [key: number]: string } = {
   919: "/icons/mode-logo.svg",
 };
 
-type ChainId =
-  | 1
-  | 11155111
-  | 10
-  | 11155420
-  | 42220
-  | 8453
-  | 84532
-  | 34443
-  | 919
-  | undefined;
-
 const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
   tokenAmount,
   onValueChange,
@@ -71,26 +56,38 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
 }) => {
   const tokenPriceInUSD = 0.02959;
   const [usdAmount, setUsdAmount] = useState<number>(0);
-  const [selectedToken, setSelectedToken] = useState<string>("ETH");
+  const [selectedToken, setSelectedToken] = useState<string>("CUSD");
   const [inputValue, setInputValue] = useState<string>(
     initialAmount.toFixed(3)
   );
   const { width } = useWindowSize();
+  const { isMiniPay } = useAuthStore();
+  const { balances: minipayBalances, error: minipayError } =
+    useMinipayBalances();
 
   const isMobile = width && width <= 768;
 
-  const { tokenBalances, isLoading, error } = useTokenBalances();
-  const userWallets = useUserWallets();
-  const { address } = useAccount();
-  const { data: balance } = useBalance({
-    address,
-    chainId: currentNetwork as ChainId,
-  });
+  // Only use wagmi and dynamic-labs hooks when not in MiniPay mode
+  const {
+    tokenBalances = [],
+    isLoading = false,
+    error = null,
+  } = isMiniPay ? {} : useTokenBalances();
+  const userWallets = isMiniPay ? null : useUserWallets() || [];
+  const { address = undefined } = isMiniPay ? {} : useAccount() || {};
+  const { data: balance = { value: BigInt(0), decimals: 18 } } = isMiniPay
+    ? {}
+    : useBalance({
+        address,
+        chainId: currentNetwork as ChainId,
+      }) || {};
 
   const supportedChains = getChainsForEnvironment();
 
   const { chainBalances, totalBalanceUSD } =
-    calculateChainBalances(tokenBalances);
+    !isMiniPay && tokenBalances.length > 0
+      ? calculateChainBalances(tokenBalances)
+      : { chainBalances: {}, totalBalanceUSD: 0 };
 
   const EthIcon = styled(Eth)`
     color: #627eea;
@@ -161,13 +158,17 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
   };
 
   const getAvailableBalance = () => {
+    if (isMiniPay && minipayBalances) {
+      return parseFloat(minipayBalances[selectedToken] || "0");
+    }
+
     const currentChainBalance = chainBalances[currentNetwork?.toString() || ""];
     const tokenBalance = currentChainBalance?.tokens.find(
       (token) => token.symbol === selectedToken
     );
     return selectedToken === "ETH"
       ? balance
-        ? parseFloat(formatUnits(balance.value, balance.decimals))
+        ? parseFloat(formatUnits(balance?.value, balance?.decimals))
         : 0
       : tokenBalance?.balance
       ? parseFloat(tokenBalance.balance.toString())
@@ -181,10 +182,14 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
   };
 
   const renderAvailableBalance = () => {
-    if (isLoading) {
+    if (
+      isMiniPay &&
+      minipayBalances &&
+      minipayBalances[selectedToken] === null
+    ) {
       return <p className="text-xs">Loading balance...</p>;
     }
-    if (error) {
+    if (error || (isMiniPay && minipayError)) {
       return <p className="text-xs text-red-500">Error fetching balance</p>;
     }
     const displayBalance = getAvailableBalance().toFixed(3);
@@ -216,8 +221,24 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
             className="inline-block w-4 h-4 mr-2"
           />
         );
+      case "CEUR":
+        return (
+          <img
+            src="/icons/eurc-icon.svg"
+            alt="cUSD"
+            className="inline-block w-4 h-4 mr-2"
+          />
+        );
       case "ETH":
         return <EthIcon size={20} />;
+      case "CELO":
+        return (
+          <img
+            src="/icons/celo-celo-logo.svg"
+            alt="cUSD"
+            className="inline-block w-4 h-4 mr-2"
+          />
+        );
       default:
         return null;
     }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useDeezNuts } from "@/hooks/use-peanut";
 import { ToastAction } from "@/components/ui/toast";
 import Link from "next/link";
@@ -9,6 +9,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import NetworkSelector from "@/components/chain-network-select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Props {
   paymentInfo: {
@@ -67,10 +70,12 @@ export const getTokenIcon = (token: string, chainId: number): string => {
 const PaymentDetails: React.FC<Props> = ({ paymentInfo }) => {
   const { truncateHash } = useDeezNuts();
   const { toast } = useToast();
+  const [isMultiChain, setIsMultiChain] = useState(false);
 
   const copyToClipboard = (link: string) => {
-    navigator.clipboard;
+    navigator.clipboard.writeText(link);
   };
+
   const chainName =
     chainIdMapping[Number(paymentInfo.chainId)] ||
     `Chain ${paymentInfo.chainId}`;
@@ -79,7 +84,7 @@ const PaymentDetails: React.FC<Props> = ({ paymentInfo }) => {
     copyToClipboard(text.toLowerCase());
     toast({
       title: "Copied to clipboard!",
-      description: `Sender address has been copied to clipboard.`,
+      description: `${label} has been copied to clipboard.`,
       action: <ToastAction altText="Spooky">👻</ToastAction>,
     });
   };
@@ -146,6 +151,35 @@ const PaymentDetails: React.FC<Props> = ({ paymentInfo }) => {
             </p>
           </div>
         </div>
+
+        {!paymentInfo.claimed && (
+          <div className="flex items-center justify-end p-4 space-x-2">
+            <Switch
+              id="multi-chain-link"
+              checked={isMultiChain}
+              onCheckedChange={() => setIsMultiChain(!isMultiChain)}
+            />
+            <Label htmlFor="multi-chain-link" className="text-xs">
+              Multi-Chain
+            </Label>
+          </div>
+        )}
+
+        {isMultiChain && (
+          <div className="mt-4 flex h-16 items-center border-t text-xs">
+            <div className="flex w-full items-center justify-between">
+              <div className="flex flex-col w-full">
+                <span className="inline-block font-semibold">
+                  Select Destination Chain
+                </span>
+                <NetworkSelector
+                  currentChainId={paymentInfo.chainId.toString()}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {paymentInfo.transactionHash && (
           <div className="flex justify-end">
             <Link

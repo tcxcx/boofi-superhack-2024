@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 
 import { decl } from "postcss";
+import { interfaces as peanutInterfaces } from "@squirrel-labs/peanut-sdk";
 
 declare type SearchParamProps = {
   params: { [key: string]: string };
@@ -408,4 +409,54 @@ declare interface PaymentInfo {
   depositDate: string;
   tokenURI: string;
   transactionHash: string;
+}
+// my supported chains in the whole app
+export type ChainId =
+  | 1
+  | 11155111
+  | 10
+  | 11155420
+  | 42220
+  | 8453
+  | 84532
+  | 34443
+  | 919
+  | undefined;
+
+// the claim type to render multichain or singlechain options on the claim page
+export type ClaimType = "claim" | "claimxchain";
+
+declare interface IClaimScreenProps {
+  crossChainDetails?:
+    | Array<
+        peanutInterfaces.ISquidChain & {
+          tokens: peanutInterfaces.ISquidToken[];
+        }
+      >
+    | undefined;
+  type: ClaimType;
+  setClaimType: (type: ClaimType) => void;
+  recipient: { name?: string; address: string };
+  setRecipient: (recipient: { name?: string; address: string }) => void;
+  selectedRoute: any;
+  setSelectedRoute: (route: any) => void;
+  hasFetchedRoute: boolean;
+  setHasFetchedRoute: (fetched: boolean) => void;
+  recipientType: interfaces.RecipientType;
+  setRecipientType: (type: interfaces.RecipientType) => void;
+}
+
+declare interface xchainDetail {
+  axelarChainName?: string;
+  chainIconURI?: string;
+  chainId?: string;
+  chainType?: string;
+}
+
+type SquidChainWithTokens = peanutInterfaces.ISquidChain & {
+  tokens: peanutInterfaces.ISquidToken[];
+};
+
+declare interface CombinedType extends interfaces.IPeanutChainDetails {
+  tokens: interfaces.IToken[];
 }

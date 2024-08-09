@@ -27,11 +27,14 @@ export const currencyAddresses: Record<number, Record<string, string>> = {
   42220: {
     // Celo Mainnet
     CUSD: "0x765de816845861e75a25fca122bb6898b8b1282a",
+    CELO: "0xf194afdf50b03e69bd7d057c1aa9e10c9954e4c9",
   },
   44787: {
     // Celo Alfajores
-    CUSD: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
-    USDC: "0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B",
+    CUSD: "0x874069fa1eb16d44d622f2e0ca25eea172369bc1",
+    USDC: "0x10c892a6ec43a53e45d0b916b4b7d383b1b78c0f",
+    CELO: "0xf194afdf50b03e69bd7d057c1aa9e10c9954e4c9",
+    CEUR: "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
   },
   8453: {
     // Base Mainnet

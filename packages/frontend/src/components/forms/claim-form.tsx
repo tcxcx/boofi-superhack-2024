@@ -1,43 +1,21 @@
-import { useState, ChangeEvent, useEffect } from "react";
-import { ChevronRightIcon, PiggyBankIcon, XIcon } from "lucide-react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { AnimatePresence, motion } from "framer-motion";
-import { FadeText } from "@/components/magicui/fade-text";
-import Link from "next/link";
 import { useDeezNuts } from "@/hooks/use-peanut";
-import { getLinkDetails } from "@squirrel-labs/peanut-sdk";
 import PaymentDetails from "./payment-details";
-import { toast } from "../ui/use-toast";
+import NetworkSelector from "@/components/chain-network-select"; // Ensure this path is correct
 import confetti from "canvas-confetti";
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { Chain } from "viem/chains";
+import { toast } from "@/components/ui/use-toast";
+import { getLinkDetails } from "@squirrel-labs/peanut-sdk";
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-const BLOCKSCOUT_EXPLORERS: Record<number, string> = {
-  1: "https://eth.blockscout.com",
-  10: "https://optimism.blockscout.com",
-  420: "https://optimism-sepolia.blockscout.com",
-  42220: "https://celo.blockscout.com",
-  44787: "https://alfajores.blockscout.com",
-  8453: "https://base.blockscout.com",
-  84532: "https://base-sepolia.blockscout.com",
-  34443: "https://mode.blockscout.com",
-  919: "https://mode-testnet.blockscout.com",
-  11155111: "https://sepolia.blockscout.com",
-};
-
-export function getBlockExplorerUrl(chain: Chain): string {
-  return (
-    BLOCKSCOUT_EXPLORERS[chain.id] || chain.blockExplorers?.default.url || ""
-  );
-}
-
-export function getBlockExplorerUrlByChainId(chainId: number): string {
-  return BLOCKSCOUT_EXPLORERS[chainId] || "";
+interface ExtendedPaymentInfo {
+  chainId: number | string;
+  tokenSymbol: string;
+  tokenAmount: string;
+  senderAddress: string;
+  claimed: boolean;
+  depositDate: string;
+  transactionHash?: string;
+  depositIndex: number;
 }
 
 interface IGetLinkDetailsResponse {
@@ -59,17 +37,6 @@ interface IGetLinkDetailsResponse {
   tokenURI: string;
 }
 
-interface ExtendedPaymentInfo {
-  chainId: number | string;
-  tokenSymbol: string;
-  tokenAmount: string;
-  senderAddress: string;
-  claimed: boolean;
-  depositDate: string;
-  transactionHash?: string;
-  depositIndex: number;
-}
-
 export default function ClaimForm({
   claimId: initialClaimId,
 }: {
@@ -77,8 +44,8 @@ export default function ClaimForm({
 }) {
   const {
     truncateHash,
-    copyToClipboard,
     claimPayLink,
+    claimPayLinkXChain,
     isLoading: isPeanutLoading,
   } = useDeezNuts();
   const [overlayVisible, setOverlayVisible] = useState(false);
@@ -89,14 +56,8 @@ export default function ClaimForm({
   const [paymentInfo, setPaymentInfo] = useState<ExtendedPaymentInfo | null>(
     null
   );
-
+  const [destinationChainId, setDestinationChainId] = useState<string>(""); // To store selected chain ID
   const [details, setDetails] = useState<IGetLinkDetailsResponse | null>(null);
-
-  useEffect(() => {
-    if (paymentInfo?.claimed) {
-      setOverlayVisible(true);
-    }
-  }, [paymentInfo?.claimed]);
 
   const fetchLinkDetails = async (link: string) => {
     try {
@@ -113,7 +74,6 @@ export default function ClaimForm({
         depositDate: details.depositDate,
         depositIndex: details.depositIndex,
       };
-
       setPaymentInfo(extendedPaymentInfo);
     } catch (error: any) {
       console.error("Error fetching link details:", error.message);
@@ -124,6 +84,18 @@ export default function ClaimForm({
       });
     }
   };
+
+  useEffect(() => {
+    if (initialClaimId) {
+      fetchLinkDetails(initialClaimId);
+    }
+  }, [initialClaimId]);
+
+  useEffect(() => {
+    if (paymentInfo?.claimed) {
+      setOverlayVisible(true);
+    }
+  }, [paymentInfo?.claimed]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInputLink(e.target.value);
@@ -140,11 +112,7 @@ export default function ClaimForm({
 
   const handleSuccess = async () => {
     // Trigger confetti animation
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    });
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
     // Fetch and update the latest link details
     if (inputLink) {
@@ -161,9 +129,9 @@ export default function ClaimForm({
         title: "Already claimed",
         description: "You have already claimed this link.",
       });
-    } else if (paymentInfo && details) {
+    } else if (paymentInfo && !destinationChainId) {
       try {
-        const txHash = await claimPayLink(details.link, handleSuccess);
+        const txHash = await claimPayLink(details?.link || "", handleSuccess);
         setTransactionDetails(txHash);
         setPaymentInfo((prevInfo) =>
           prevInfo
@@ -173,15 +141,29 @@ export default function ClaimForm({
       } catch (error) {
         console.error("Error claiming payment link:", error);
       }
+    } else if (paymentInfo && destinationChainId) {
+      try {
+        const txHash = await claimPayLinkXChain(
+          details?.link || "",
+          destinationChainId,
+          details?.tokenAddress || "",
+          handleSuccess
+        );
+        setTransactionDetails(txHash);
+        setPaymentInfo((prevInfo) =>
+          prevInfo
+            ? { ...prevInfo, transactionHash: txHash, claimed: true }
+            : null
+        );
+      } catch (error) {
+        console.error("Error claiming cross-chain payment link:", error);
+      }
     }
   };
 
   const handleCloseOverlay = () => {
     setOverlayVisible(false);
   };
-
-  const texts = ["Confetti... 🎉", "Waiting for confirmation", "Confirming"];
-  let currentText = texts[0];
 
   const renderClaimInfo = () => (
     <section className="flex w-full h-auto flex-col justify-between rounded-2xl border bg-background p-5">
@@ -240,16 +222,24 @@ export default function ClaimForm({
     <section className="mx-auto h-full flex flex-col items-center">
       {paymentInfo ? renderClaimInfo() : renderInputForm()}
       {paymentInfo && (
-        <Button
-          size={"lg"}
-          className="mt-5 flex items-center gap-2 self-end w-full"
-          onClick={handleClaim}
-          variant={"fito"}
-          disabled={paymentInfo.claimed || isPeanutLoading}
-        >
-          Claim
-          <span className="text-xl"> 👻</span>
-        </Button>
+        <>
+          {!paymentInfo.claimed && (
+            <NetworkSelector
+              currentChainId={paymentInfo.chainId.toString()} // Pass the currentChainId
+              onSelect={(chainId: string) => setDestinationChainId(chainId)} // Ensure chainId is typed as string
+            />
+          )}
+          <Button
+            size={"lg"}
+            className="mt-5 flex items-center gap-2 self-end w-full"
+            onClick={handleClaim}
+            variant={"fito"}
+            disabled={paymentInfo.claimed || isPeanutLoading}
+          >
+            Claim
+            <span className="text-xl"> 👻</span>
+          </Button>
+        </>
       )}
       {overlayVisible && (
         <div className="animate-in fade-in-0 fixed inset-0 z-50 bg-white/90">
@@ -258,21 +248,10 @@ export default function ClaimForm({
               className="absolute right-4 top-4"
               onClick={handleCloseOverlay}
             >
-              <XIcon className="size-6" />
+              <span className="size-6">X</span>
             </button>
             <div className="flex flex-col items-center gap-10">
-              <AnimatePresence mode="wait">
-                <FadeText
-                  key={currentText}
-                  className="text-4xl font-bold text-black dark:text-white"
-                  direction="up"
-                  framerProps={{
-                    show: { transition: { delay: 0.2 } },
-                  }}
-                  text={currentText}
-                />
-              </AnimatePresence>
-              {!paymentInfo?.claimed && isPeanutLoading ? (
+              {isPeanutLoading ? (
                 <div role="status">
                   <svg
                     aria-hidden="true"
@@ -293,40 +272,26 @@ export default function ClaimForm({
                   <span className="sr-only">Loading...</span>
                 </div>
               ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1 }}
-                >
-                  <div className="flex size-[400px] flex-col justify-between rounded-2xl border bg-white">
-                    <div className="p-5">
-                      <div className="flex items-center text-xs">
-                        <span>Link Claimed Successfully</span>
-                      </div>
-                      <div className="p-5">
-                        {paymentInfo && (
-                          <PaymentDetails paymentInfo={paymentInfo} />
-                        )}
-                      </div>
+                <div className="flex size-[400px] flex-col justify-between rounded-2xl border bg-white">
+                  <div className="p-5">
+                    <div className="flex items-center text-xs">
+                      <span>Link Claimed Successfully</span>
                     </div>
-                    <div className="mt-5 flex h-16 items-center border-t text-xs">
-                      <div className="mx-5 flex w-full items-center justify-end">
-                        <div className="flex flex-row">
-                          <Link
-                            href={`${getBlockExplorerUrlByChainId(
-                              paymentInfo?.chainId as number
-                            )}/tx/${transactionDetails}`}
-                            target="_blank"
-                            className="flex items-center"
-                          >
-                            <span>View in Blockscout</span>
-                            <ChevronRightIcon className="size-4" />
-                          </Link>
-                        </div>
+                    <div className="p-5">
+                      {paymentInfo && (
+                        <PaymentDetails paymentInfo={paymentInfo} />
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-5 flex h-16 items-center border-t text-xs">
+                    <div className="mx-5 flex w-full items-center justify-end">
+                      <div className="flex flex-row">
+                        <span>View in Blockscout</span>
+                        <span className="inline-block ml-1 h-4 w-4">→</span>
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
             </div>
           </div>

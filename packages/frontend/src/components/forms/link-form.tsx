@@ -16,7 +16,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { QRCode } from "react-qrcode-logo";
 import SentTable from "@/components/tables/sent-table";
 import { useDeezNuts } from "@/hooks/use-peanut";
-import NetworkSelector from "../chain-network-select";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -57,6 +56,11 @@ export default function LinkForm() {
   const isMobile = width && width <= 768;
   const { toast } = useToast();
   const [currentText, setCurrentText] = useState<string>("");
+  const [destinationChainId, setDestinationChainId] = useState<string | null>(
+    null
+  );
+
+  const [destinationToken, setDestinationToken] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchNetwork = async () => {
@@ -236,28 +240,6 @@ export default function LinkForm() {
             currentNetwork={currentNetwork?.id || null}
           />
         </div>
-        <div className="flex items-center justify-end p-4 space-x-2">
-          <Switch
-            id="multi-chain-link"
-            checked={isMultiChain}
-            onCheckedChange={() => setIsMultiChain(!isMultiChain)}
-          />
-          <Label htmlFor="multi-chain-link" className="text-xs">
-            Multi-Chain
-          </Label>
-        </div>
-        {isMultiChain && (
-          <div className="mt-4 flex h-16 items-center border-t text-xs">
-            <div className="flex w-full items-center justify-between">
-              <div className="flex flex-col w-full">
-                <span className="inline-block font-semibold">
-                  Select Destination Chain
-                </span>
-                <NetworkSelector />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       <div className="flex justify-between w-full space-x-2">
         <Button

@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Translations } from "@/lib/types/translations";
 import PaymentLink from "../payment-link-card";
 import { useAccount, useConnect, useSwitchChain } from "wagmi";
 import { getNetwork } from "@dynamic-labs/sdk-react-core";
 import { celoAlfajores } from "viem/chains";
+import { useAuthStore } from "@/store/authStore";
 
 interface HomeContentProps {
   translations: Translations["Home"];
 }
 
-// Extend the existing IEthereum interface instead of redeclaring Window
 declare global {
   interface IEthereum {
     isMiniPay?: boolean;
@@ -22,7 +22,7 @@ export const HomeContent: React.FC<HomeContentProps> = ({ translations }) => {
   const { isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { switchChain } = useSwitchChain();
-  const [isMiniPay, setIsMiniPay] = useState(false);
+  const { isMiniPay, setMiniPay, setUserAddress } = useAuthStore();
 
   useEffect(() => {
     const checkMiniPay = async () => {
@@ -31,23 +31,31 @@ export const HomeContent: React.FC<HomeContentProps> = ({ translations }) => {
         window.ethereum &&
         (window.ethereum as IEthereum).isMiniPay
       ) {
-        setIsMiniPay(true);
+        setMiniPay(true);
 
         const connector = connectors[0];
         if (connector) {
           await connect({ connector });
 
-          // Replace `null` with the actual walletConnector instance you're using
+          // Only switch the chain if MiniPay is detected
           const networkId = await getNetwork(null);
-          if (networkId && networkId !== celoAlfajores.id) {
+          if (networkId !== celoAlfajores.id) {
             await switchChain({ chainId: celoAlfajores.id });
+          }
+
+          const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+            params: [],
+          });
+          if (accounts && accounts.length > 0) {
+            setUserAddress(accounts[0]);
           }
         }
       }
     };
 
     checkMiniPay();
-  }, [connect, connectors, switchChain]);
+  }, [connect, connectors, switchChain, setMiniPay, setUserAddress]);
 
   const renderSlogan = () => (
     <p className="text-lg mb-8">
@@ -90,6 +98,14 @@ export const HomeContent: React.FC<HomeContentProps> = ({ translations }) => {
     <div className="p-4 overflow-hidden min-h-screen flex flex-col items-center justify-center">
       <div className="relative flex flex-col items-center justify-center w-full ">
         <div className="relative z-1 text-center bg-background dark:bg-background rounded-lg shadow-lg p-8 max-w-md w-full border-2 border-black dark:border-white">
+          {isMiniPay && (
+            <p className="text-green-500 font-bold mb-4">MiniPay detected!</p>
+          )}
+          {!isMiniPay && (
+            <p className="hidden text-red-500 font-bold mb-4">
+              MiniPay not detected.
+            </p>
+          )}
           <PaymentLink />
         </div>
       </div>
