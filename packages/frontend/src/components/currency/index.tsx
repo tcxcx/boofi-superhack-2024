@@ -128,7 +128,7 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
-    const regex = /^\d*\.?\d{0,3}$/;
+    const regex = /^\d*\.?\d{0,4}$/;
 
     if (regex.test(value) || value === "") {
       setInputValue(value);
@@ -249,7 +249,7 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
       <div className="relative mb-2 text-center text-4xl">
         <div className="relative flex justify-center text-6xl">
           <InputMoney
-            placeholder="0.000"
+            placeholder="0.0000"
             value={inputValue}
             onChange={handleInputChange}
             className="text-center w-full"

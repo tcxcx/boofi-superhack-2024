@@ -7,21 +7,19 @@ export const currencyAddresses: Record<number, Record<string, string>> = {
   },
   10: {
     // Optimism
-    USDC: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
+    USDC: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
     DAI: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
-    USDT: "0x94b2bD7fE24CE7D00a02b2dC000DeCFe7ab5853d",
+    USDT: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
   },
   11155111: {
     // Sepolia Testnet
-    USDC: "	0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    USDC: "0x45Df5e83B9400421cb3B262b31ee7236b61219D5",
     DAI: "0x68194a729C2450ad26072b3D33ADaCbcef39D574",
     USDT: "0x523C8591Fbe215B5aF0bEad65e65dF783A37BCBC",
   },
   11155420: {
     // Optimism Sepolia
-    ETH: "0xYourEthContractAddressOptimismSepolia",
-    USDC: "0xYourUsdcContractAddressOptimismSepolia",
-    DAI: "0xYourDaiContractAddressOptimismSepolia",
+    USDC: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
     USDT: "0x4bA3A5ab2EC0C9C45F153374fbcb05a1526C4a01",
   },
   42220: {
@@ -32,9 +30,9 @@ export const currencyAddresses: Record<number, Record<string, string>> = {
   44787: {
     // Celo Alfajores
     CUSD: "0x874069fa1eb16d44d622f2e0ca25eea172369bc1",
-    USDC: "0x10c892a6ec43a53e45d0b916b4b7d383b1b78c0f",
+    USDC: "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
     CELO: "0xf194afdf50b03e69bd7d057c1aa9e10c9954e4c9",
-    CEUR: "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
+    CEUR: "0x10c892a6ec43a53e45d0b916b4b7d383b1b78c0f",
   },
   8453: {
     // Base Mainnet
@@ -44,7 +42,6 @@ export const currencyAddresses: Record<number, Record<string, string>> = {
   84532: {
     // Base Sepolia
     USDC: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-    DAI: "0xbEC8ab89b34835F6b99fFc29c088426E8e708ceA",
     USDT: "0x73b4a58138CCcBDa822dF9449FeDA5eaC6669ebD",
   },
   34443: {

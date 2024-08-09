@@ -86,24 +86,23 @@ export const useDeezNuts = () => {
     checkMiniPayAndNetwork();
   }, [userWallets, isMobile]);
 
-  const fetchAndSetCrossChainDetails = async () => {
-    const response = await fetch("https://apiplus.squidrouter.com/v2/chains", {
-      headers: {
-        "x-integrator-id": "11CBA45B-5EE9-4331-B146-48CCD7ED4C7C",
-      },
-    });
-    if (!response.ok) {
-      throw new Error("Squid: Network response was not ok");
-    }
-    const data = await response.json();
+  // const fetchAndSetCrossChainDetails = async () => {
+  //   const response = await fetch("https://apiplus.squidrouter.com/v2/chains", {
+  //     headers: {
+  //       "x-integrator-id": "11CBA45B-5EE9-4331-B146-48CCD7ED4C7C",
+  //     },
+  //   });
+  //   if (!response.ok) {
+  //     throw new Error("Squid: Network response was not ok");
+  //   }
+  //   const data = await response.json();
 
-    setCrossChainDetails(data.chains);
-  };
+  //   setCrossChainDetails(data.chains);
+  // };
 
-  useEffect(() => {
-    fetchAndSetCrossChainDetails();
-  }, []);
-  console.log("CrossChainDetails", crossChainDetails);
+  // useEffect(() => {
+  //   fetchAndSetCrossChainDetails();
+  // }, []);
 
   const getChainConfig = (chainId: number) => {
     const supportedChains = getChainsForEnvironment();

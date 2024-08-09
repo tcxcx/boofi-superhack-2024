@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -17,8 +17,6 @@ import { QRCode } from "react-qrcode-logo";
 import SentTable from "@/components/tables/sent-table";
 import { useDeezNuts } from "@/hooks/use-peanut";
 import { useWindowSize } from "@/hooks/use-window-size";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { currencyAddresses } from "@/utils/currencyAddresses";
 import { getNetwork, useUserWallets } from "@dynamic-labs/sdk-react-core";
 import Link from "next/link";
@@ -59,7 +57,6 @@ export default function LinkForm() {
   const [destinationChainId, setDestinationChainId] = useState<string | null>(
     null
   );
-
   const [destinationToken, setDestinationToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,7 +67,6 @@ export default function LinkForm() {
           const chain = config.chains.find((chain) => chain.id === networkId);
           if (chain) {
             setCurrentNetwork(chain);
-            console.log("Current network set to:", chain);
           }
         }
       }
@@ -104,7 +100,6 @@ export default function LinkForm() {
         () => setCurrentText("Spooky Crypto Finance Made Easy!")
       );
       setTransactionDetails(link as TransactionDetails);
-      console.log("Transaction details:", link);
 
       // Trigger confetti emoji animation
       const scalar = 4;
@@ -343,6 +338,13 @@ export default function LinkForm() {
                         Share on Telegram
                       </Button>
                     </div>
+
+                    {isMultiChain && destinationChainId && (
+                      <div className="flex justify-center text-xs text-primary mb-4">
+                        <span>Destination Chain: {destinationChainId}</span>
+                      </div>
+                    )}
+
                     <div className="mt-2 flex h-16 items-center border-t text-xs">
                       <div className="mx-5 flex w-full items-center justify-between">
                         <div className="flex flex-col">

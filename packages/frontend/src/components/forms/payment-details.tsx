@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useDeezNuts } from "@/hooks/use-peanut";
 import { ToastAction } from "@/components/ui/toast";
 import Link from "next/link";
@@ -9,9 +9,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import NetworkSelector from "@/components/chain-network-select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 interface Props {
   paymentInfo: {
@@ -22,10 +19,12 @@ interface Props {
     claimed: boolean;
     depositDate: string;
     transactionHash?: string;
+    destinationChainId?: number;
+    destinationChainName?: string;
   };
 }
 
-const chainIdMapping: { [key: number]: string } = {
+export const chainIdMapping: { [key: number]: string } = {
   84532: "Base Sepolia",
   1: "Ethereum",
   11155111: "Sepolia",
@@ -38,7 +37,7 @@ const chainIdMapping: { [key: number]: string } = {
   919: "Mode Testnet",
 };
 
-const chainIcons: { [key: number]: string } = {
+export const chainIcons: { [key: number]: string } = {
   1: "/icons/ethereum-eth-logo.svg",
   11155111: "/icons/ethereum-eth-logo.svg",
   10: "/icons/optimism-ethereum-op-logo.svg",
@@ -50,35 +49,22 @@ const chainIcons: { [key: number]: string } = {
   919: "/icons/mode-logo.svg",
 };
 
-export const getTokenIcon = (token: string, chainId: number): string => {
-  switch (token.toUpperCase()) {
-    case "USDC":
-      return "/icons/usdc.svg";
-    case "DAI":
-      return "/icons/dai.svg";
-    case "USDT":
-      return "/icons/usdt.svg";
-    case "CUSD":
-      return "/icons/celo-dollar_large.webp";
-    case "ETH":
-      return chainIcons[chainId] || "/icons/ethereum-eth-logo.svg";
-    default:
-      return "/icons/default-token.svg";
-  }
-};
-
 const PaymentDetails: React.FC<Props> = ({ paymentInfo }) => {
   const { truncateHash } = useDeezNuts();
   const { toast } = useToast();
-  const [isMultiChain, setIsMultiChain] = useState(false);
 
   const copyToClipboard = (link: string) => {
     navigator.clipboard.writeText(link);
   };
 
-  const chainName =
+  const originChainName =
     chainIdMapping[Number(paymentInfo.chainId)] ||
     `Chain ${paymentInfo.chainId}`;
+
+  const destinationChainName =
+    paymentInfo.destinationChainName ||
+    chainIdMapping[Number(paymentInfo.destinationChainId)] ||
+    "";
 
   const handleCopy = (text: string, label: string) => {
     copyToClipboard(text.toLowerCase());
@@ -99,14 +85,11 @@ const PaymentDetails: React.FC<Props> = ({ paymentInfo }) => {
         <div className="flex items-center gap-4">
           <div className="bg-muted rounded-md flex items-center justify-center aspect-square w-12">
             <Image
-              src={getTokenIcon(
-                paymentInfo.tokenSymbol,
-                Number(paymentInfo.chainId)
-              )}
+              src={chainIcons[Number(paymentInfo.chainId)]}
               width={24}
               height={24}
               priority
-              alt={`${paymentInfo.tokenSymbol} Logo`}
+              alt={`${originChainName} Logo`}
               className="aspect-square object-contain"
             />
           </div>
@@ -114,14 +97,33 @@ const PaymentDetails: React.FC<Props> = ({ paymentInfo }) => {
             <h3 className="text-2xl font-semibold">
               {paymentInfo.tokenSymbol}
             </h3>
-            <p className="text-muted-foreground text-xs">{chainName}</p>
+            <p className="text-muted-foreground text-xs">{originChainName}</p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold">{paymentInfo.tokenAmount} 👻</p>
           </div>
         </div>
+
+        {paymentInfo.destinationChainId && (
+          <div className="mt-4 flex items-center gap-2 text-xs">
+            <div className="flex items-center">
+              <Image
+                src={chainIcons[Number(paymentInfo.destinationChainId)]}
+                width={16}
+                height={16}
+                alt={`${destinationChainName} Logo`}
+                className="mr-2"
+              />
+              <span className="font-medium">{destinationChainName}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Destination Chain
+            </span>
+          </div>
+        )}
+
         <div className="grid gap-2 text-xs">
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <p className="text-muted-foreground">From:</p>
             <Button
               variant="link"
@@ -133,7 +135,7 @@ const PaymentDetails: React.FC<Props> = ({ paymentInfo }) => {
               {truncateHash(paymentInfo.senderAddress)}
               <CopyIcon className="ml-2 h-4 w-4" />
             </Button>
-          </div>
+          </div> */}
 
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground">Status:</p>
@@ -151,34 +153,6 @@ const PaymentDetails: React.FC<Props> = ({ paymentInfo }) => {
             </p>
           </div>
         </div>
-
-        {!paymentInfo.claimed && (
-          <div className="flex items-center justify-end p-4 space-x-2">
-            <Switch
-              id="multi-chain-link"
-              checked={isMultiChain}
-              onCheckedChange={() => setIsMultiChain(!isMultiChain)}
-            />
-            <Label htmlFor="multi-chain-link" className="text-xs">
-              Multi-Chain
-            </Label>
-          </div>
-        )}
-
-        {isMultiChain && (
-          <div className="mt-4 flex h-16 items-center border-t text-xs">
-            <div className="flex w-full items-center justify-between">
-              <div className="flex flex-col w-full">
-                <span className="inline-block font-semibold">
-                  Select Destination Chain
-                </span>
-                <NetworkSelector
-                  currentChainId={paymentInfo.chainId.toString()}
-                />
-              </div>
-            </div>
-          </div>
-        )}
 
         {paymentInfo.transactionHash && (
           <div className="flex justify-end">

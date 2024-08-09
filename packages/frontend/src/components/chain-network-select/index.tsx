@@ -36,6 +36,24 @@ const supportedBridgeTokensDictionary: Chain[] = [
     ],
   },
   {
+    chainId: "11155111",
+    chain: "Ethereum Sepolia",
+    tokens: [
+      {
+        token: "usdc",
+        address: "0x45Df5e83B9400421cb3B262b31ee7236b61219D5",
+      },
+      {
+        token: "usdt",
+        address: "0x523C8591Fbe215B5aF0bEad65e65dF783A37BCBC",
+      },
+      {
+        token: "dai",
+        address: "0x68194a729C2450ad26072b3D33ADaCbcef39D574",
+      },
+    ],
+  },
+  {
     chainId: "10",
     chain: "Optimism",
     tokens: [
@@ -44,8 +62,22 @@ const supportedBridgeTokensDictionary: Chain[] = [
         address: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
       },
       {
+        token: "usdt",
+        address: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+      },
+    ],
+  },
+  {
+    chainId: "11155420",
+    chain: "Optimism Sepolia",
+    tokens: [
+      {
         token: "usdc",
-        address: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
+        address: "0x4bA3A5ab2EC0C9C45F153374fbcb05a1526C4a01",
+      },
+      {
+        token: "usdc",
+        address: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
       },
     ],
   },
@@ -56,6 +88,60 @@ const supportedBridgeTokensDictionary: Chain[] = [
       {
         token: "usdc",
         address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      },
+      {
+        token: "dai",
+        address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+      },
+    ],
+  },
+  {
+    chainId: "84532",
+    chain: "Base Sepolia",
+    tokens: [
+      {
+        token: "usdc",
+        address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      },
+      {
+        token: "usdt",
+        address: "0x73b4a58138CCcBDa822dF9449FeDA5eaC6669ebD",
+      },
+    ],
+  },
+  {
+    chainId: "42220",
+    chain: "Celo",
+    tokens: [
+      {
+        token: "cusd",
+        address: "0x765de816845861e75a25fca122bb6898b8b1282a",
+      },
+      {
+        token: "celo",
+        address: "0xf194afdf50b03e69bd7d057c1aa9e10c9954e4c9",
+      },
+    ],
+  },
+  {
+    chainId: "44787",
+    chain: "Celo Alfajores",
+    tokens: [
+      {
+        token: "usdc",
+        address: "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
+      },
+      {
+        token: "cusd",
+        address: "0x874069fa1eb16d44d622f2e0ca25eea172369bc1",
+      },
+      {
+        token: "ceur",
+        address: "0x10c892a6ec43a53e45d0b916b4b7d383b1b78c0f",
+      },
+      {
+        token: "celo",
+        address: "0xf194afdf50b03e69bd7d057c1aa9e10c9954e4c9",
       },
     ],
   },
