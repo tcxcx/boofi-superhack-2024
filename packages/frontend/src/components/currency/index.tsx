@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -16,14 +16,15 @@ import { Dai } from "@styled-icons/crypto/Dai";
 import { Usdt } from "@styled-icons/crypto/Usdt";
 import { InputMoney } from "../ui/input";
 import { useTokenBalances, useUserWallets } from "@dynamic-labs/sdk-react-core";
-import { useAccount, useBalance } from "wagmi";
+import { useAccount, useBalance, useChainId } from "wagmi";
 import { getChainsForEnvironment } from "@/store/supportedChains";
 import { calculateChainBalances } from "@/utils/multiChainBalance";
 import { formatUnits } from "viem";
 import { useWindowSize } from "@/hooks/use-window-size";
-import { useAuthStore } from "@/store/authStore"; // Import zustand store
-import { useMinipayBalances } from "@/hooks/use-minipay-balance"; // Import custom hook
+import { useAuthStore } from "@/store/authStore";
 import { ChainId } from "@/lib/types";
+import { celo, celoAlfajores } from "viem/chains";
+import { useEnhancedMinipayBalances } from "@/hooks/use-minipay-balance";
 
 interface CurrencyDisplayerProps {
   tokenAmount: number;
@@ -32,6 +33,7 @@ interface CurrencyDisplayerProps {
   availableTokens: Record<string, string>;
   onTokenSelect: (token: string) => void;
   currentNetwork: number | null;
+  isMiniPay: boolean;
 }
 
 const chainIcons: { [key: number]: string } = {
@@ -53,6 +55,7 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
   availableTokens,
   onTokenSelect,
   currentNetwork,
+  isMiniPay,
 }) => {
   const tokenPriceInUSD = 0.02959;
   const [usdAmount, setUsdAmount] = useState<number>(0);
@@ -61,33 +64,41 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
     initialAmount.toFixed(3)
   );
   const { width } = useWindowSize();
-  const { isMiniPay } = useAuthStore();
-  const { balances: minipayBalances, error: minipayError } =
-    useMinipayBalances();
+  const chainId = useChainId();
 
   const isMobile = width && width <= 768;
 
-  // Only use wagmi and dynamic-labs hooks when not in MiniPay mode
   const {
     tokenBalances = [],
-    isLoading = false,
-    error = null,
-  } = isMiniPay ? {} : useTokenBalances();
-  const userWallets = isMiniPay ? null : useUserWallets() || [];
-  const { address = undefined } = isMiniPay ? {} : useAccount() || {};
-  const { data: balance = { value: BigInt(0), decimals: 18 } } = isMiniPay
-    ? {}
-    : useBalance({
-        address,
-        chainId: currentNetwork as ChainId,
-      }) || {};
+    isLoading: dynamicLoading,
+    error: dynamicError,
+  } = useTokenBalances();
+
+  const {
+    balances: minipayBalances,
+    error: minipayError,
+    loading: minipayLoading,
+  } = useEnhancedMinipayBalances();
+
+  const userWallets = useUserWallets() || [];
+  const { address } = useAccount();
+  const { data: balance, isLoading: wagmiLoading } = useBalance({
+    address,
+    chainId: currentNetwork as ChainId,
+  });
 
   const supportedChains = getChainsForEnvironment();
 
   const { chainBalances, totalBalanceUSD } =
-    !isMiniPay && tokenBalances.length > 0
-      ? calculateChainBalances(tokenBalances)
-      : { chainBalances: {}, totalBalanceUSD: 0 };
+    calculateChainBalances(tokenBalances);
+
+  useEffect(() => {
+    if (isMiniPay && chainId !== celo.id && chainId !== celoAlfajores.id) {
+      console.warn(
+        "MiniPay detected but not on Celo network. Please switch to Celo network manually."
+      );
+    }
+  }, [isMiniPay, chainId]);
 
   const EthIcon = styled(Eth)`
     color: #627eea;
@@ -158,10 +169,11 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
   };
 
   const getAvailableBalance = () => {
-    if (isMiniPay && minipayBalances) {
-      return parseFloat(minipayBalances[selectedToken] || "0");
+    if (isMiniPay) {
+      return minipayBalances[selectedToken]
+        ? parseFloat(minipayBalances[selectedToken] || "0")
+        : 0;
     }
-
     const currentChainBalance = chainBalances[currentNetwork?.toString() || ""];
     const tokenBalance = currentChainBalance?.tokens.find(
       (token) => token.symbol === selectedToken
@@ -182,27 +194,53 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
   };
 
   const renderAvailableBalance = () => {
-    if (
-      isMiniPay &&
-      minipayBalances &&
-      minipayBalances[selectedToken] === null
-    ) {
-      return <p className="text-xs">Loading balance...</p>;
+    if (isMiniPay) {
+      if (minipayLoading) {
+        return <p className="text-xs">Loading MiniPay balance...</p>;
+      }
+      if (minipayError) {
+        console.error("MiniPay error:", minipayError);
+        return (
+          <p className="text-xs text-red-500">
+            Error fetching MiniPay balance: {minipayError}
+          </p>
+        );
+      }
+      const displayBalance = minipayBalances[selectedToken] || "0";
+      return (
+        <>
+          <Button variant={"link"} className="text-xs" onClick={handleMaxClick}>
+            Available balance (Max):
+          </Button>
+          <Button variant={"link"} className="text-xs" onClick={handleMaxClick}>
+            {displayBalance} {getTokenSymbolForNetwork(selectedToken)}{" "}
+          </Button>
+        </>
+      );
+    } else {
+      if (dynamicLoading || wagmiLoading) {
+        return <p className="text-xs">Loading balance...</p>;
+      }
+      if (dynamicError || !balance) {
+        console.error("Error fetching balance:", dynamicError);
+        return (
+          <p className="text-xs text-red-500">
+            Error fetching balance in CURRENCY
+          </p>
+        );
+      }
+      const displayBalance = getAvailableBalance().toFixed(3);
+      return (
+        <>
+          <Button variant={"link"} className="text-xs" onClick={handleMaxClick}>
+            Available balance (Max):
+          </Button>
+          <Button variant={"link"} className="text-xs" onClick={handleMaxClick}>
+            {displayBalance} {getTokenSymbolForNetwork(selectedToken)}{" "}
+          </Button>
+        </>
+      );
     }
-    if (error || (isMiniPay && minipayError)) {
-      return <p className="text-xs text-red-500">Error fetching balance</p>;
-    }
-    const displayBalance = getAvailableBalance().toFixed(3);
-    return (
-      <>
-        <Button variant={"link"} className="text-xs" onClick={handleMaxClick}>
-          Available balance (Max):
-        </Button>
-        <Button variant={"link"} className="text-xs" onClick={handleMaxClick}>
-          {displayBalance} {getTokenSymbolForNetwork(selectedToken)}{" "}
-        </Button>
-      </>
-    );
   };
 
   const getTokenIcon = (token: string) => {
@@ -221,21 +259,13 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
             className="inline-block w-4 h-4 mr-2"
           />
         );
-      case "CEUR":
-        return (
-          <img
-            src="/icons/eurc-icon.svg"
-            alt="cUSD"
-            className="inline-block w-4 h-4 mr-2"
-          />
-        );
       case "ETH":
         return <EthIcon size={20} />;
       case "CELO":
         return (
           <img
             src="/icons/celo-celo-logo.svg"
-            alt="cUSD"
+            alt="CELO"
             className="inline-block w-4 h-4 mr-2"
           />
         );
@@ -254,6 +284,18 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
             onChange={handleInputChange}
             className="text-center w-full"
           />
+        </div>
+        <div className="text-xs text-red-500 mb-2">
+          {/* <p>isMiniPay: {isMiniPay ? "true" : "false"}</p>
+          <p>minipayLoading: {minipayLoading ? "true" : "false"}</p>
+          <p>minipayError: {minipayError || "No"}</p>
+          <p>minipayBalances: {JSON.stringify(minipayBalances)}</p>
+          <p>dynamicLoading: {dynamicLoading ? "true" : "false"}</p>
+          <p>wagmiLoading: {wagmiLoading ? "true" : "false"}</p>
+          <p>dynamicError: {dynamicError ? "Yes" : "No"}</p>
+          <p>balance: {balance ? "Exists" : "Null"}</p>
+          <p>selectedToken: {selectedToken}</p>
+          <p>currentNetwork: {currentNetwork}</p> */}
         </div>
       </div>
       <div className="mx-auto mt-2 block text-xs w-full items-center justify-between">
@@ -281,17 +323,27 @@ const CurrencyDisplayer: React.FC<CurrencyDisplayerProps> = ({
         <SelectContent className="w-full justify-between">
           <SelectGroup className="justify-stretch">
             <SelectLabel>Stablecoins</SelectLabel>
-            {Object.keys(availableTokens).map((token) => (
-              <SelectItem key={token} value={token.toLowerCase()}>
-                {getTokenIcon(token)} {token}
-              </SelectItem>
-            ))}
+            {isMiniPay
+              ? ["CUSD"].map((token) => (
+                  <SelectItem key={token} value={token.toLowerCase()}>
+                    {getTokenIcon(token)} {token}
+                  </SelectItem>
+                ))
+              : Object.keys(availableTokens).map((token) => (
+                  <SelectItem key={token} value={token.toLowerCase()}>
+                    {getTokenIcon(token)} {token}
+                  </SelectItem>
+                ))}
           </SelectGroup>
           <SelectGroup>
             <SelectLabel>Cryptocurrencies</SelectLabel>
-            <SelectItem value="eth">
-              <EthIcon size={20} /> {getTokenSymbolForNetwork("ETH")}
-            </SelectItem>
+            {isMiniPay ? (
+              <SelectItem value="celo">{getTokenIcon("CELO")} CELO</SelectItem>
+            ) : (
+              <SelectItem value="eth">
+                <EthIcon size={20} /> {getTokenSymbolForNetwork("ETH")}
+              </SelectItem>
+            )}
           </SelectGroup>
         </SelectContent>
       </Select>

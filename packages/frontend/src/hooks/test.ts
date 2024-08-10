@@ -29,6 +29,8 @@ import { useTransactionStore } from "@/store/transactionStore";
 import { useToast } from "@/components/ui/use-toast";
 import { useLocale } from "next-intl";
 import { PEANUT_API_URL } from "@/lib/constants";
+import { celo, celoAlfajores } from "viem/chains";
+import { useAuthStore } from "@/store/authStore";
 
 const PEANUTAPIKEY = process.env.NEXT_PUBLIC_DEEZ_NUTS_API_KEY;
 const next_proxy_url = PEANUT_API_URL;
@@ -39,7 +41,7 @@ if (!PEANUTAPIKEY) {
 
 export const useDeezNuts = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isMiniPay, setIsMiniPay] = useState<boolean>(false);
+  const { isMiniPay } = useAuthStore();
   const [address, setAddress] = useState<string | null>(null);
   const [currentChainId, setCurrentChainId] = useState<number | null>(null);
   const { primaryWallet } = useDynamicContext();
@@ -60,64 +62,27 @@ export const useDeezNuts = () => {
     }
   };
 
-  useEffect(() => {
-    const checkMiniPayAndNetwork = async () => {
-      if (userWallets.length > 0) {
-        const network = await getNetwork(userWallets[0].connector);
-        setCurrentChainId(typeof network === "number" ? network : null);
-      }
-
-      if (isMobile && typeof window !== "undefined" && window.ethereum) {
-        if ("isMiniPay" in window.ethereum) {
-          setIsMiniPay(true);
-          try {
-            const accounts = await window.ethereum.request({
-              method: "eth_requestAccounts",
-              params: [],
-            });
-            console.log("MiniPay account:", accounts[0]);
-          } catch (error) {
-            console.error("Error requesting MiniPay accounts:", error);
-          }
-        }
-      }
-    };
-
-    checkMiniPayAndNetwork();
-  }, [userWallets, isMobile]);
-
-  // const fetchAndSetCrossChainDetails = async () => {
-  //   const response = await fetch("https://apiplus.squidrouter.com/v2/chains", {
-  //     headers: {
-  //       "x-integrator-id": "11CBA45B-5EE9-4331-B146-48CCD7ED4C7C",
-  //     },
-  //   });
-  //   if (!response.ok) {
-  //     throw new Error("Squid: Network response was not ok");
-  //   }
-  //   const data = await response.json();
-
-  //   setCrossChainDetails(data.chains);
-  // };
-
-  // useEffect(() => {
-  //   fetchAndSetCrossChainDetails();
-  // }, []);
-
   const getChainConfig = (chainId: number) => {
+    console.log("getChainConfig - Chain ID:", chainId);
+    if (isMiniPay) {
+      return process.env.NEXT_PUBLIC_USE_TESTNET === "true"
+        ? celoAlfajores
+        : celo;
+    }
     const supportedChains = getChainsForEnvironment();
     const chainConfig = supportedChains.find((c) => c.id === chainId);
     if (!chainConfig) {
-      throw new Error(`Unsupported chain ID: ${chainId}`);
+      throw new Error(`Chain ID ${chainId} not supported yet`);
     }
     return chainConfig;
   };
 
   const getUserAddress = async () => {
     if (typeof window !== "undefined" && window.ethereum) {
+      const chainConfig = getChainConfig(currentChainId || 44787);
       let walletClient = createWalletClient({
         transport: custom(window.ethereum),
-        chain: getChainConfig(currentChainId || 44787),
+        chain: chainConfig,
       });
 
       let [address] = await walletClient.getAddresses();
@@ -216,21 +181,16 @@ export const useDeezNuts = () => {
       try {
         let userAddress: `0x${string}`;
 
-        if (isMobile && isMiniPay) {
+        if (isMiniPay && isMobile && window.ethereum) {
           const address = await getUserAddress();
           if (!address || !address.startsWith("0x")) {
             throw new Error("Invalid or unavailable user address for MiniPay.");
           }
           userAddress = address as `0x${string}`;
-        } else {
-          if (
-            !primaryWallet ||
-            !primaryWallet.address ||
-            !primaryWallet.address.startsWith("0x")
-          ) {
-            throw new Error("Invalid or unavailable primary wallet address.");
-          }
+        } else if (primaryWallet && primaryWallet.address) {
           userAddress = primaryWallet.address as `0x${string}`;
+        } else {
+          throw new Error("Invalid or unavailable primary wallet address.");
         }
 
         const prepareTxsResponse = await peanut.prepareTxs({
@@ -245,7 +205,7 @@ export const useDeezNuts = () => {
         throw error;
       }
     },
-    [isMobile, isMiniPay, getUserAddress, primaryWallet]
+    [isMiniPay, isMobile, getUserAddress, primaryWallet]
   );
 
   const createPayLink = async (
@@ -260,7 +220,13 @@ export const useDeezNuts = () => {
   ) => {
     setIsLoading(true);
     try {
-      const chainConfig = getChainConfig(currentChainId || 84532);
+      if (!currentChainId) {
+        throw new Error(
+          "Chain ID is not set. Please ensure the wallet is connected and the network is selected."
+        );
+      }
+
+      const chainConfig = getChainConfig(currentChainId);
 
       const linkDetails = generateLinkDetails({
         tokenValue: amount,

@@ -26,6 +26,8 @@ import { useToast } from "@/components/ui/use-toast";
 import Image from "next/image";
 import { ToastAction } from "@/components/ui/toast";
 import confetti from "canvas-confetti";
+import { celo, celoAlfajores } from "viem/chains";
+import { useAuthStore } from "@/store/authStore";
 
 interface TransactionDetails {
   transactionHash: string;
@@ -58,21 +60,29 @@ export default function LinkForm() {
     null
   );
   const [destinationToken, setDestinationToken] = useState<string | null>(null);
+  const { isMiniPay, setCurrentChainId } = useAuthStore();
 
   useEffect(() => {
     const fetchNetwork = async () => {
-      if (userWallets.length > 0) {
+      if (isMiniPay) {
+        const celoNetwork =
+          process.env.NEXT_PUBLIC_USE_TESTNET === "true" ? celoAlfajores : celo;
+        setCurrentNetwork(celoNetwork);
+        setCurrentChainId(celoNetwork.id);
+        console.log("Setting network for MiniPay:", celoNetwork);
+      } else if (userWallets.length > 0) {
         const networkId = await getNetwork(userWallets[0].connector);
         if (networkId) {
           const chain = config.chains.find((chain) => chain.id === networkId);
           if (chain) {
             setCurrentNetwork(chain);
+            setCurrentChainId(chain.id);
           }
         }
       }
     };
     fetchNetwork();
-  }, [userWallets]);
+  }, [userWallets, isMiniPay, setCurrentChainId]);
 
   const handleCreateLinkClick = async (e: any) => {
     e.preventDefault();
@@ -84,7 +94,7 @@ export default function LinkForm() {
     }
 
     try {
-      let tokenAddress = "0x0000000000000000000000000000000000000000"; // Default address for ETH
+      let tokenAddress = "0x0000000000000000000000000000000000000000";
       if (selectedToken !== "ETH") {
         tokenAddress =
           currencyAddresses[currentNetwork.id]?.[selectedToken] || tokenAddress;
@@ -233,6 +243,7 @@ export default function LinkForm() {
             }
             onTokenSelect={setSelectedToken}
             currentNetwork={currentNetwork?.id || null}
+            isMiniPay={isMiniPay}
           />
         </div>
       </div>
