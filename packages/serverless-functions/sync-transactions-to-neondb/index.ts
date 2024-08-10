@@ -1,6 +1,13 @@
 import { Client, Databases } from "node-appwrite";
 import { neon } from "@neondatabase/serverless";
 
+const {
+  NEON_DATABASE_URL,
+  APPWRITE_ENDPOINT,
+  APPWRITE_FUNCTION_PROJECT_ID,
+  APPWRITE_API_KEY,
+} = process.env;
+
 export default async function ({
   req,
   res,
@@ -13,14 +20,14 @@ export default async function ({
   error: (message: string) => void;
 }) {
   const client = new Client();
+
   client
-    .setEndpoint(process.env.APPWRITE_ENDPOINT!)
-    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID!)
-    .setKey(process.env.APPWRITE_API_KEY!);
+    .setEndpoint(APPWRITE_ENDPOINT!)
+    .setProject(APPWRITE_FUNCTION_PROJECT_ID!)
+    .setKey(APPWRITE_API_KEY!);
 
   const database = new Databases(client);
-
-  const sql = neon(process.env.NEON_DATABASE_URL!);
+  const sql = neon(NEON_DATABASE_URL!);
 
   try {
     const payload = req.body;
