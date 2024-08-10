@@ -9,7 +9,9 @@ const {
 
 console.log("NEON_DATABASE_URL:", NEON_DATABASE);
 
-const sql = neon(NEON_DATABASE!);
+const sql = neon(
+  "postgresql://boofi-superhack-2024_owner:vxoSVgBJ9u3R@ep-tiny-darkness-a5adlxuu.us-east-2.aws.neon.tech/boofi-superhack-2024?sslmode=require"!
+);
 
 export async function POST(req: NextRequest) {
   try {
