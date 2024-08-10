@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import crypto from "crypto";
 
@@ -7,33 +7,27 @@ const {
   APPWRITE_WEBHOOK_SECRET: WEBHOOK_SECRET,
 } = process.env;
 
-console.log("NEON_DATABASE_URL:", process.env.NEON_DATABASE);
+console.log("NEON_DATABASE_URL:", NEON_DATABASE);
 
-const sql = neon(
-  "postgresql://boofi-superhack-2024_owner:vxoSVgBJ9u3R@ep-tiny-darkness-a5adlxuu.us-east-2.aws.neon.tech/boofi-superhack-2024?sslmode=require"
-);
+const sql = neon(NEON_DATABASE!);
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
+export async function POST(req: NextRequest) {
   try {
-    const signature = req.headers["x-appwrite-webhook-signature"] as string;
+    const signature = req.headers.get("x-appwrite-webhook-signature");
 
     const computedSignature = crypto
       .createHmac("sha1", WEBHOOK_SECRET!)
-      .update(JSON.stringify(req.body))
+      .update(JSON.stringify(await req.json()))
       .digest("hex");
 
     if (computedSignature !== signature) {
-      return res.status(401).json({ message: "Invalid signature" });
+      return NextResponse.json(
+        { message: "Invalid signature" },
+        { status: 401 }
+      );
     }
 
-    const { eventName, data } = req.body;
+    const { eventName, data } = await req.json();
 
     if (eventName.includes("create") || eventName.includes("update")) {
       const { document } = data;
@@ -51,9 +45,12 @@ export default async function handler(
       }
     }
 
-    res.status(200).json({ success: true });
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
     console.error("Error processing webhook:", err);
-    res.status(500).json({ error: "Error processing webhook" });
+    return NextResponse.json(
+      { error: "Error processing webhook" },
+      { status: 500 }
+    );
   }
 }
