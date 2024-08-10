@@ -1,17 +1,21 @@
 import { useState, useEffect } from "react";
 import { createPublicClient, getContract, http, formatEther } from "viem";
-import { celoAlfajores } from "viem/chains";
+import { celo, celoAlfajores } from "viem/chains";
 import { useAuthStore } from "@/store/authStore";
 import { currencyAddresses } from "@/utils/currencyAddresses";
 import CUSD_ABI from "@/utils/abis/cusd-abi.json";
 
-const publicClient = createPublicClient({
-  chain: celoAlfajores,
-  transport: http(),
-});
-
+// Map ABIs for tokens (e.g., CUSD)
 const abiMapping: Record<string, any> = {
   CUSD: CUSD_ABI.abi,
+};
+
+const getPublicClient = (isMiniPay: boolean) => {
+  const chain = isMiniPay ? celoAlfajores : celo;
+  return createPublicClient({
+    chain,
+    transport: http(),
+  });
 };
 
 export const useEnhancedMinipayBalances = () => {
@@ -19,6 +23,8 @@ export const useEnhancedMinipayBalances = () => {
   const [balances, setBalances] = useState<{ [key: string]: string }>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+
+  const publicClient = getPublicClient(isMiniPay);
 
   const fetchTokenBalance = async (
     symbol: string,
@@ -51,8 +57,6 @@ export const useEnhancedMinipayBalances = () => {
   };
 
   useEffect(() => {
-    if (!isMiniPay) return;
-
     const fetchBalances = async () => {
       setLoading(true);
       setError(null);
@@ -76,7 +80,8 @@ export const useEnhancedMinipayBalances = () => {
 
         const tokenBalances: { [key: string]: string } = {};
 
-        const tokens = currencyAddresses[celoAlfajores.id];
+        const chainId = isMiniPay ? celo.id : celoAlfajores.id;
+        const tokens = currencyAddresses[chainId];
         for (const [symbol, tokenAddress] of Object.entries(tokens)) {
           if (symbol === "CUSD" || symbol === "CELO") {
             const balance = await fetchTokenBalance(
