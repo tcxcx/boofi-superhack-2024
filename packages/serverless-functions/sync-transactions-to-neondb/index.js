@@ -16,8 +16,8 @@ async function default_1({ req, res, log, error, }) {
     const database = new node_appwrite_1.Databases(client);
     const sql = (0, serverless_1.neon)(NEON_DATABASE_URL);
     try {
-        const payload = req.body; // Raw body to validate signature
-        const signature = req.headers["x-appwrite-webhook-signature"]; // Get signature header
+        const payload = req.body;
+        const signature = req.headers["x-appwrite-webhook-signature"];
         // Validate the signature
         const computedSignature = crypto_1.default
             .createHmac("sha1", APPWRITE_WEBHOOK_SECRET)
@@ -27,7 +27,6 @@ async function default_1({ req, res, log, error, }) {
             error("Invalid webhook signature");
             return res.status(401).json({ error: "Invalid webhook signature" });
         }
-        // Parse the payload after verifying the signature
         const parsedPayload = JSON.parse(payload);
         const { eventName, data } = parsedPayload;
         if (eventName.includes("create") || eventName.includes("update")) {
