@@ -1,0 +1,39 @@
+apiVersion: 3
+name: superhack-boofi-transactions
+status: ACTIVE
+resource_size: s
+sources:
+  base.receipt_transactions:
+    dataset_name: base.receipt_transactions
+    type: dataset
+    version: 1.2.0
+    start_at: earliest
+  optimism.receipt_transactions:
+    dataset_name: optimism.receipt_transactions
+    type: dataset
+    version: 1.1.0
+    start_at: earliest
+
+transforms: {}
+
+sinks:
+  postgres_base_receipt_transactions:
+    type: postgres
+    table: base_receipt_transactions
+    schema: public
+    secret_name: POSTGRES_SECRET_CLZNJPZLN0
+    description: "Postgres sink for: base.receipt_transactions"
+    from: base.receipt_transactions
+    batch_size: 1000
+    batch_flush_interval: "3s"
+    rewrite_batched_inserts: true
+  postgres_optimism_receipt_transactions:
+    type: postgres
+    table: optimism_receipt_transactions
+    schema: public
+    secret_name: POSTGRES_SECRET_CLZNJPZLN0
+    description: "Postgres sink for: optimism.receipt_transactions"
+    from: optimism.receipt_transactions
+    batch_size: 1000
+    batch_flush_interval: "3s"
+    rewrite_batched_inserts: true

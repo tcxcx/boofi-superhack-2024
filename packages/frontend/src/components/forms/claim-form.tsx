@@ -1,21 +1,20 @@
-import { useState, ChangeEvent, useEffect } from "react";
-import { ChevronRightIcon, PiggyBankIcon, XIcon } from "lucide-react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useDeezNuts } from "@/hooks/use-peanut";
+import PaymentDetails from "./payment-details";
+import NetworkSelector from "@/components/chain-network-select"; // Ensure this path is correct
+import confetti from "canvas-confetti";
+import { toast } from "@/components/ui/use-toast";
+import { getLinkDetails } from "@squirrel-labs/peanut-sdk";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { AnimatePresence, motion } from "framer-motion";
 import { FadeText } from "@/components/magicui/fade-text";
+import { ChevronRightIcon, XIcon } from "lucide-react";
 import Link from "next/link";
-import { useDeezNuts } from "@/hooks/use-peanut";
-import { getLinkDetails } from "@squirrel-labs/peanut-sdk";
-import PaymentDetails from "./payment-details";
-import { toast } from "../ui/use-toast";
-import confetti from "canvas-confetti";
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
 import { Chain } from "viem/chains";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import Image from "next/image";
+import { chainIdMapping, chainIcons } from "@/components/forms/payment-details"; // Adjust the path as necessary
 
 const BLOCKSCOUT_EXPLORERS: Record<number, string> = {
   1: "https://eth.blockscout.com",
@@ -40,6 +39,27 @@ export function getBlockExplorerUrlByChainId(chainId: number): string {
   return BLOCKSCOUT_EXPLORERS[chainId] || "";
 }
 
+export function getChainInfoByChainId(chainId: number | string) {
+  const id = Number(chainId);
+  const chainName = chainIdMapping[id] || `Chain ${id}`;
+  const chainIcon = chainIcons[id] || "";
+
+  return {
+    chainName,
+    chainIcon,
+  };
+}
+interface ExtendedPaymentInfo {
+  chainId: number | string;
+  tokenSymbol: string;
+  tokenAmount: string;
+  senderAddress: string;
+  claimed: boolean;
+  depositDate: string;
+  transactionHash?: string;
+  depositIndex: number;
+}
+
 interface IGetLinkDetailsResponse {
   link: string;
   chainId: string;
@@ -59,17 +79,6 @@ interface IGetLinkDetailsResponse {
   tokenURI: string;
 }
 
-interface ExtendedPaymentInfo {
-  chainId: number | string;
-  tokenSymbol: string;
-  tokenAmount: string;
-  senderAddress: string;
-  claimed: boolean;
-  depositDate: string;
-  transactionHash?: string;
-  depositIndex: number;
-}
-
 export default function ClaimForm({
   claimId: initialClaimId,
 }: {
@@ -77,8 +86,8 @@ export default function ClaimForm({
 }) {
   const {
     truncateHash,
-    copyToClipboard,
     claimPayLink,
+    claimPayLinkXChain,
     isLoading: isPeanutLoading,
   } = useDeezNuts();
   const [overlayVisible, setOverlayVisible] = useState(false);
@@ -89,14 +98,12 @@ export default function ClaimForm({
   const [paymentInfo, setPaymentInfo] = useState<ExtendedPaymentInfo | null>(
     null
   );
+  const [inProgress, setInProgress] = useState(false);
+  const [currentText, setCurrentText] = useState("Ready to claim your link");
 
+  const [destinationChainId, setDestinationChainId] = useState<string>(""); // To store selected chain ID
   const [details, setDetails] = useState<IGetLinkDetailsResponse | null>(null);
-
-  useEffect(() => {
-    if (paymentInfo?.claimed) {
-      setOverlayVisible(true);
-    }
-  }, [paymentInfo?.claimed]);
+  const [isMultiChain, setIsMultiChain] = useState(false);
 
   const fetchLinkDetails = async (link: string) => {
     try {
@@ -113,7 +120,6 @@ export default function ClaimForm({
         depositDate: details.depositDate,
         depositIndex: details.depositIndex,
       };
-
       setPaymentInfo(extendedPaymentInfo);
     } catch (error: any) {
       console.error("Error fetching link details:", error.message);
@@ -124,6 +130,18 @@ export default function ClaimForm({
       });
     }
   };
+
+  useEffect(() => {
+    if (initialClaimId) {
+      fetchLinkDetails(initialClaimId);
+    }
+  }, [initialClaimId]);
+
+  useEffect(() => {
+    if (paymentInfo?.claimed) {
+      setOverlayVisible(true);
+    }
+  }, [paymentInfo?.claimed]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInputLink(e.target.value);
@@ -140,11 +158,7 @@ export default function ClaimForm({
 
   const handleSuccess = async () => {
     // Trigger confetti animation
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-    });
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
     // Fetch and update the latest link details
     if (inputLink) {
@@ -153,17 +167,30 @@ export default function ClaimForm({
 
     // Set the overlay visible
     setOverlayVisible(true);
+    setInProgress(false); // Mark the transaction as complete
   };
 
   const handleClaim = async () => {
+    setInProgress(true);
+    setOverlayVisible(true);
+    setCurrentText("Starting the claim process...");
+
     if (paymentInfo?.claimed) {
       toast({
         title: "Already claimed",
         description: "You have already claimed this link.",
       });
-    } else if (paymentInfo && details) {
+      setCurrentText("Link already claimed.");
+    } else if (paymentInfo && !destinationChainId) {
       try {
-        const txHash = await claimPayLink(details.link, handleSuccess);
+        setCurrentText("Claiming the payment link...");
+        const txHash = await claimPayLink(
+          details?.link || "",
+          () => setCurrentText("Transaction in progress..."),
+          () => setCurrentText("Transaction successful!"),
+          (error) => setCurrentText(`Error: ${error.message}`),
+          () => setCurrentText("Process complete.")
+        );
         setTransactionDetails(txHash);
         setPaymentInfo((prevInfo) =>
           prevInfo
@@ -172,16 +199,41 @@ export default function ClaimForm({
         );
       } catch (error) {
         console.error("Error claiming payment link:", error);
+        setInProgress(false);
+        setOverlayVisible(false);
+        setCurrentText("Failed to claim the link.");
+      }
+    } else if (paymentInfo && destinationChainId) {
+      try {
+        setCurrentText("Claiming the cross-chain payment link...");
+        const txHash = await claimPayLinkXChain(
+          details?.link || "",
+          destinationChainId,
+          details?.tokenAddress || "",
+          () => setCurrentText("Cross-chain transaction in progress..."),
+          () => setCurrentText("Cross-chain transaction successful!"),
+          (error) => setCurrentText(`Error: ${error.message}`),
+          () => setCurrentText("Process complete.")
+        );
+        setTransactionDetails(txHash);
+        setPaymentInfo((prevInfo) =>
+          prevInfo
+            ? { ...prevInfo, transactionHash: txHash, claimed: true }
+            : null
+        );
+      } catch (error) {
+        console.error("Error claiming cross-chain payment link:", error);
+        setInProgress(false);
+        setOverlayVisible(false);
+        setCurrentText("Failed to claim the link.");
       }
     }
   };
 
   const handleCloseOverlay = () => {
     setOverlayVisible(false);
+    setInProgress(false);
   };
-
-  const texts = ["Confetti... 🎉", "Waiting for confirmation", "Confirming"];
-  let currentText = texts[0];
 
   const renderClaimInfo = () => (
     <section className="flex w-full h-auto flex-col justify-between rounded-2xl border bg-background p-5">
@@ -191,7 +243,7 @@ export default function ClaimForm({
             <span className="text-xl">💸👻💸</span>
             <span>You are claiming</span>
           </div>
-          <div className="text-center flex py-2">
+          <div className="text-center flex py-2 w-full justify-center">
             {paymentInfo && (
               <>
                 <PaymentDetails paymentInfo={paymentInfo} />
@@ -200,6 +252,27 @@ export default function ClaimForm({
           </div>
         </div>
       </div>
+
+      {!paymentInfo?.claimed && (
+        <div className="flex items-center justify-end p-4 space-x-2">
+          <Switch
+            id="multi-chain-link"
+            checked={isMultiChain}
+            onCheckedChange={() => setIsMultiChain(!isMultiChain)}
+          />
+          <Label htmlFor="multi-chain-link" className="text-xs">
+            Multi-Chain
+          </Label>
+          {/* //add info icon explaining what this is */}
+        </div>
+      )}
+
+      {isMultiChain && !paymentInfo?.claimed && (
+        <NetworkSelector
+          currentChainId={paymentInfo?.chainId.toString() || ""}
+          onSelect={(chainId: string) => setDestinationChainId(chainId)}
+        />
+      )}
     </section>
   );
 
@@ -240,16 +313,18 @@ export default function ClaimForm({
     <section className="mx-auto h-full flex flex-col items-center">
       {paymentInfo ? renderClaimInfo() : renderInputForm()}
       {paymentInfo && (
-        <Button
-          size={"lg"}
-          className="mt-5 flex items-center gap-2 self-end w-full"
-          onClick={handleClaim}
-          variant={"fito"}
-          disabled={paymentInfo.claimed || isPeanutLoading}
-        >
-          Claim
-          <span className="text-xl"> 👻</span>
-        </Button>
+        <>
+          <Button
+            size={"lg"}
+            className="mt-5 flex items-center gap-2 self-end w-full"
+            onClick={handleClaim}
+            variant={"fito"}
+            disabled={paymentInfo.claimed || isPeanutLoading}
+          >
+            Claim
+            <span className="text-xl"> 👻</span>
+          </Button>
+        </>
       )}
       {overlayVisible && (
         <div className="animate-in fade-in-0 fixed inset-0 z-50 bg-white/90">
@@ -298,31 +373,75 @@ export default function ClaimForm({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1 }}
                 >
-                  <div className="flex size-[400px] flex-col justify-between rounded-2xl border bg-white">
+                  <div className="flex w-full flex-col justify-between rounded-2xl border bg-white">
                     <div className="p-5">
                       <div className="flex items-center text-xs">
                         <span>Link Claimed Successfully</span>
                       </div>
                       <div className="p-5">
                         {paymentInfo && (
-                          <PaymentDetails paymentInfo={paymentInfo} />
+                          <>
+                            <PaymentDetails paymentInfo={paymentInfo} />
+                            <div className="mt-5 flex h-16 items-center border-t text-xs">
+                              <div className="flex w-full items-center justify-between mt-5 ">
+                                {isMultiChain && destinationChainId && (
+                                  <div className="flex flex-row">
+                                    {destinationChainId && (
+                                      <div className="flex items-center gap-4">
+                                        <div className="bg-muted rounded-md flex items-center justify-center aspect-square w-12">
+                                          <Image
+                                            src={
+                                              getChainInfoByChainId(
+                                                Number(destinationChainId)
+                                              ).chainIcon
+                                            }
+                                            className="aspect-square object-contain"
+                                            width={24}
+                                            height={24}
+                                            priority
+                                            alt={`${
+                                              getChainInfoByChainId(
+                                                Number(destinationChainId)
+                                              ).chainName
+                                            } Logo`}
+                                          />
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="text-muted-foreground text-xs">
+                                            Destination Chain
+                                          </p>
+
+                                          <h3 className="text-2xl font-semibold">
+                                            {" "}
+                                            {
+                                              getChainInfoByChainId(
+                                                Number(destinationChainId)
+                                              ).chainName
+                                            }
+                                          </h3>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between mt-5">
+                                <p className="text-xs font-bold hover:underline hover:text-primary">
+                                  <Link
+                                    href={`${getBlockExplorerUrlByChainId(
+                                      paymentInfo?.chainId as number
+                                    )}/tx/${transactionDetails}`}
+                                    target="_blank"
+                                    className="flex items-center"
+                                  >
+                                    <span>View in Blockscout</span>
+                                    <ChevronRightIcon className="size-4" />
+                                  </Link>
+                                </p>
+                              </div>
+                            </div>
+                          </>
                         )}
-                      </div>
-                    </div>
-                    <div className="mt-5 flex h-16 items-center border-t text-xs">
-                      <div className="mx-5 flex w-full items-center justify-end">
-                        <div className="flex flex-row">
-                          <Link
-                            href={`${getBlockExplorerUrlByChainId(
-                              paymentInfo?.chainId as number
-                            )}/tx/${transactionDetails}`}
-                            target="_blank"
-                            className="flex items-center"
-                          >
-                            <span>View in Blockscout</span>
-                            <ChevronRightIcon className="size-4" />
-                          </Link>
-                        </div>
                       </div>
                     </div>
                   </div>

@@ -1553,6 +1553,13 @@
     "@motionone/dom" "^10.16.4"
     tslib "^2.3.1"
 
+"@neondatabase/serverless@^0.9.4":
+  version "0.9.4"
+  resolved "https://registry.yarnpkg.com/@neondatabase/serverless/-/serverless-0.9.4.tgz#dec4b0b8b03578c2454b5e3edbf99efc15823a3d"
+  integrity sha512-D0AXgJh6xkf+XTlsO7iwE2Q1w8981E1cLCPAALMU2YKtkF/1SF6BiAzYARZFYo175ON+b1RNIy9TdSFHm5nteg==
+  dependencies:
+    "@types/pg" "8.11.6"
+
 "@next/env@14.2.5":
   version "14.2.5"
   resolved "https://registry.yarnpkg.com/@next/env/-/env-14.2.5.tgz#1d9328ab828711d3517d0a1d505acb55e5ef7ad0"
@@ -3448,7 +3455,7 @@
   dependencies:
     "@types/pg" "*"
 
-"@types/pg@*":
+"@types/pg@*", "@types/pg@8.11.6":
   version "8.11.6"
   resolved "https://registry.yarnpkg.com/@types/pg/-/pg-8.11.6.tgz#a2d0fb0a14b53951a17df5197401569fb9c0c54b"
   integrity sha512-/2WmmBXHLsfRqzfHW7BNZ8SbYzE8OSk7i3WjFYvfgRHj7S1xj+16Je5fUKv3lVdVzk/zn9TXOqf+avFCFIE0yQ==
