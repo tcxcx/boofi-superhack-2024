@@ -1,101 +1,104 @@
 import { useState, useEffect } from "react";
-import {
-  createPublicClient,
-  createWalletClient,
-  custom,
-  getContract,
-  http,
-} from "viem";
+import { createPublicClient, getContract, http, formatEther } from "viem";
 import { celoAlfajores } from "viem/chains";
 import { useAuthStore } from "@/store/authStore";
 import { currencyAddresses } from "@/utils/currencyAddresses";
 import CUSD_ABI from "@/utils/abis/cusd-abi.json";
-import USDC_ABI from "@/utils/abis/usdc-abi-celo.json";
-import CELO_ABI from "@/utils/abis/celo-abi.json";
-import CEUR_ABI from "@/utils/abis/ceur-abi.json";
 
 const publicClient = createPublicClient({
   chain: celoAlfajores,
   transport: http(),
 });
 
-export const useMinipayBalances = () => {
+const abiMapping: Record<string, any> = {
+  CUSD: CUSD_ABI.abi,
+};
+
+export const useEnhancedMinipayBalances = () => {
   const { isMiniPay } = useAuthStore();
-  const [balances, setBalances] = useState<{ [key: string]: string | null }>(
-    {}
-  );
+  const [balances, setBalances] = useState<{ [key: string]: string }>({});
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const fetchTokenBalance = async (
+    symbol: string,
+    tokenAddress: string,
+    address: string
+  ) => {
+    try {
+      const formattedAddress = address as `0x${string}`;
+      if (symbol === "CELO") {
+        const balance = await publicClient.getBalance({
+          address: formattedAddress,
+        });
+        return formatEther(balance);
+      } else if (symbol === "CUSD") {
+        const contract = getContract({
+          abi: abiMapping.CUSD,
+          address: tokenAddress as `0x${string}`,
+          client: publicClient,
+        });
+        const balanceBigInt = (await contract.read.balanceOf([
+          formattedAddress,
+        ])) as bigint;
+        return formatEther(balanceBigInt);
+      }
+      throw new Error(`Unsupported token: ${symbol}`);
+    } catch (error: any) {
+      console.error(`Failed to fetch balance for ${symbol}:`, error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
+    if (!isMiniPay) return;
+
     const fetchBalances = async () => {
-      if (!isMiniPay) return;
+      setLoading(true);
+      setError(null);
 
       try {
-        const walletClient = createWalletClient({
-          transport: custom(window.ethereum as any),
-          chain: celoAlfajores,
+        if (!window.ethereum) {
+          throw new Error("Ethereum provider not found");
+        }
+
+        const ethereum = window.ethereum as {
+          request: (args: { method: string; params?: any[] }) => Promise<any>;
+        };
+
+        const accounts = await ethereum.request({
+          method: "eth_requestAccounts",
         });
+        if (!accounts || accounts.length === 0) {
+          throw new Error("No accounts found. Please connect your wallet.");
+        }
+        const address = accounts[0];
 
-        const [address] = await walletClient.getAddresses();
-        if (!address) throw new Error("Unable to retrieve address.");
-
-        const tokenBalances: { [key: string]: string | null } = {};
+        const tokenBalances: { [key: string]: string } = {};
 
         const tokens = currencyAddresses[celoAlfajores.id];
         for (const [symbol, tokenAddress] of Object.entries(tokens)) {
-          let abi;
-          switch (symbol) {
-            case "CUSD":
-              abi = CUSD_ABI.abi;
-              break;
-            case "USDC":
-              abi = USDC_ABI;
-              break;
-            case "CELO":
-              abi = CELO_ABI;
-              break;
-            case "CEUR":
-              abi = CEUR_ABI;
-              break;
-            default:
-              continue; // Skip unknown tokens
-          }
-
-          const contract = getContract({
-            abi,
-            address: tokenAddress as `0x${string}`,
-            client: publicClient,
-          });
-
-          const balanceBigInt = (await contract.read.balanceOf([
-            address,
-          ])) as bigint;
-
-          let balanceStr = balanceBigInt.toString();
-
-          if (balanceStr.length > 18) {
-            const wholePart = balanceStr.slice(0, balanceStr.length - 18);
-            const decimalPart = balanceStr.slice(
-              balanceStr.length - 18,
-              balanceStr.length - 16
+          if (symbol === "CUSD" || symbol === "CELO") {
+            const balance = await fetchTokenBalance(
+              symbol,
+              tokenAddress,
+              address
             );
-            balanceStr = `${wholePart}.${decimalPart}`;
-          } else {
-            balanceStr = `0.${balanceStr.padStart(18, "0").slice(0, 2)}`;
+            tokenBalances[symbol] = balance;
           }
-
-          tokenBalances[symbol] = balanceStr;
         }
 
         setBalances(tokenBalances);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching balances:", error);
-        setError("Unable to fetch balances.");
+        setError(`Unable to fetch balances: ${error.message}`);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchBalances();
   }, [isMiniPay]);
 
-  return { balances, error };
+  return { balances, error, loading };
 };
