@@ -1,11 +1,13 @@
 import { Client, Databases } from "node-appwrite";
 import { neon } from "@neondatabase/serverless";
+import crypto from "crypto";
 
 const {
   NEON_DATABASE_URL,
   APPWRITE_ENDPOINT,
   APPWRITE_FUNCTION_PROJECT_ID,
   APPWRITE_API_KEY,
+  APPWRITE_WEBHOOK_SECRET,
 } = process.env;
 
 export default async function ({
@@ -30,8 +32,22 @@ export default async function ({
   const sql = neon(NEON_DATABASE_URL!);
 
   try {
-    const payload = JSON.parse(req.body);
-    const { eventName, data } = payload;
+    const payload = req.body;
+    const signature = req.headers["x-appwrite-webhook-signature"];
+
+    // Validate the signature
+    const computedSignature = crypto
+      .createHmac("sha1", APPWRITE_WEBHOOK_SECRET!)
+      .update(payload)
+      .digest("hex");
+
+    if (computedSignature !== signature) {
+      error("Invalid webhook signature");
+      return res.status(401).json({ error: "Invalid webhook signature" });
+    }
+
+    const parsedPayload = JSON.parse(payload);
+    const { eventName, data } = parsedPayload;
 
     if (eventName.includes("create") || eventName.includes("update")) {
       const { document } = data;
