@@ -45,6 +45,21 @@ export const useMiniPayDeezNuts = () => {
         chain: chainConfig,
       });
 
+      const currentChainId = await walletClient.getChainId();
+      if (currentChainId !== chainConfig.id) {
+        try {
+          await walletClient.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: `0x${chainConfig.id.toString(16)}` }],
+          });
+        } catch (error) {
+          console.error("Failed to switch the chain", error);
+          throw new Error(
+            "Failed to switch the chain. Please switch it manually."
+          );
+        }
+      }
+
       let [address] = await walletClient.getAddresses();
       return address;
     }
