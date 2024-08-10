@@ -1,14 +1,5 @@
 import { Client, Databases } from "node-appwrite";
 import { neon } from "@neondatabase/serverless";
-import crypto from "crypto";
-
-const {
-  NEON_DATABASE_URL,
-  APPWRITE_ENDPOINT,
-  APPWRITE_FUNCTION_PROJECT_ID,
-  APPWRITE_API_KEY,
-  APPWRITE_WEBHOOK_SECRET,
-} = process.env;
 
 export default async function ({
   req,
@@ -22,29 +13,17 @@ export default async function ({
   error: (message: string) => void;
 }) {
   const client = new Client();
-
   client
-    .setEndpoint(APPWRITE_ENDPOINT!)
-    .setProject(APPWRITE_FUNCTION_PROJECT_ID!)
-    .setKey(APPWRITE_API_KEY!);
+    .setEndpoint(process.env.APPWRITE_ENDPOINT!)
+    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID!)
+    .setKey(process.env.APPWRITE_API_KEY!);
 
   const database = new Databases(client);
-  const sql = neon(NEON_DATABASE_URL!);
+
+  const sql = neon(process.env.NEON_DATABASE_URL!);
 
   try {
     const payload = req.body;
-    const signature = req.headers["x-appwrite-webhook-signature"];
-
-    // Validate the signature
-    const computedSignature = crypto
-      .createHmac("sha1", APPWRITE_WEBHOOK_SECRET!)
-      .update(payload)
-      .digest("hex");
-
-    if (computedSignature !== signature) {
-      error("Invalid webhook signature");
-      return res.status(401).json({ error: "Invalid webhook signature" });
-    }
 
     const parsedPayload = JSON.parse(payload);
     const { eventName, data } = parsedPayload;
@@ -67,7 +46,7 @@ export default async function ({
     return res.json({ success: true });
   } catch (err) {
     const errorMessage = (err as Error).message || "Unknown error";
-    error(`Error processing webhook: ${errorMessage}`);
-    return res.status(500).json({ error: "Error processing webhook" });
+    error(`Error processing data: ${errorMessage}`);
+    return res.status(500).json({ error: "Error processing data" });
   }
 }
