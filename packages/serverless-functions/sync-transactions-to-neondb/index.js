@@ -1,32 +1,20 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_appwrite_1 = require("node-appwrite");
 const serverless_1 = require("@neondatabase/serverless");
-const crypto_1 = __importDefault(require("crypto"));
-const { NEON_DATABASE_URL, APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY, APPWRITE_WEBHOOK_SECRET, } = process.env;
 async function default_1({ req, res, log, error, }) {
-    const client = new node_appwrite_1.Client();
-    client
-        .setEndpoint(APPWRITE_ENDPOINT)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setKey(APPWRITE_API_KEY);
-    const database = new node_appwrite_1.Databases(client);
-    const sql = (0, serverless_1.neon)(NEON_DATABASE_URL);
     try {
+        // Initialize Appwrite client using global environment variables
+        const client = new node_appwrite_1.Client();
+        client
+            .setEndpoint(process.env.APPWRITE_PROJECT_ID)
+            .setProject(process.env.APPWRITE_PROJECT_ID)
+            .setKey(process.env.APPWRITE_API_KEY);
+        const database = new node_appwrite_1.Databases(client);
+        // Initialize NeonDB connection using the global environment variable
+        const sql = (0, serverless_1.neon)(process.env.NEON_DATABASE_URL);
         const payload = req.body;
-        const signature = req.headers["x-appwrite-webhook-signature"];
-        // Validate the signature
-        const computedSignature = crypto_1.default
-            .createHmac("sha1", APPWRITE_WEBHOOK_SECRET)
-            .update(payload)
-            .digest("hex");
-        if (computedSignature !== signature) {
-            error("Invalid webhook signature");
-            return res.status(401).json({ error: "Invalid webhook signature" });
-        }
+        // Parse the payload and handle the data accordingly
         const parsedPayload = JSON.parse(payload);
         const { eventName, data } = parsedPayload;
         if (eventName.includes("create") || eventName.includes("update")) {
@@ -45,8 +33,8 @@ async function default_1({ req, res, log, error, }) {
     }
     catch (err) {
         const errorMessage = err.message || "Unknown error";
-        error(`Error processing webhook: ${errorMessage}`);
-        return res.status(500).json({ error: "Error processing webhook" });
+        error(`Error processing data: ${errorMessage}`);
+        return res.status(500).json({ error: "Error processing data" });
     }
 }
 exports.default = default_1;
