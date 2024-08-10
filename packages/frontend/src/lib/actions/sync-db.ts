@@ -2,9 +2,14 @@ import { neon } from "@neondatabase/serverless";
 import { createAdminClient } from "@/lib/appwrite";
 import { Query } from "node-appwrite";
 
-const { NEON_DATABASE_URL } = process.env;
+const { NEON_DATABASE_URL: NEON_DATABASE } = process.env;
 
-const sql = neon(NEON_DATABASE_URL!);
+console.log("NEON_DATABASE_URL in SYNC DB:", NEON_DATABASE);
+const sql = neon(
+  "postgresql://boofi-superhack-2024_owner:vxoSVgBJ9u3R@ep-tiny-darkness-a5adlxuu.us-east-2.aws.neon.tech/boofi-superhack-2024?sslmode=require"!
+);
+
+// console.log("NEON_DATABASE_URL in SYNC DB sql statement:", sql);
 
 export async function initialSync() {
   const { database } = await createAdminClient();

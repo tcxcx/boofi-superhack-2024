@@ -2,9 +2,16 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { neon } from "@neondatabase/serverless";
 import crypto from "crypto";
 
-const { NEON_DATABASE_URL, APPWRITE_WEBHOOK_SECRET } = process.env;
+const {
+  NEON_DATABASE_URL: NEON_DATABASE,
+  APPWRITE_WEBHOOK_SECRET: WEBHOOK_SECRET,
+} = process.env;
 
-const sql = neon(NEON_DATABASE_URL!);
+console.log("NEON_DATABASE_URL:", process.env.NEON_DATABASE);
+
+const sql = neon(
+  "postgresql://boofi-superhack-2024_owner:vxoSVgBJ9u3R@ep-tiny-darkness-a5adlxuu.us-east-2.aws.neon.tech/boofi-superhack-2024?sslmode=require"
+);
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,7 +25,7 @@ export default async function handler(
     const signature = req.headers["x-appwrite-webhook-signature"] as string;
 
     const computedSignature = crypto
-      .createHmac("sha1", APPWRITE_WEBHOOK_SECRET!)
+      .createHmac("sha1", WEBHOOK_SECRET!)
       .update(JSON.stringify(req.body))
       .digest("hex");
 
