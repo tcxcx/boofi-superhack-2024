@@ -1,0 +1,269 @@
+apiVersion: 3
+name: superhack-boofi-transactions
+status: ACTIVE
+resource_size: s
+sources:
+  base_sepolia_receipt_transactions:
+    dataset_name: base_sepolia.receipt_transactions
+    version: 1.1.0
+    type: dataset
+    start_at: earliest
+  base.receipt_transactions:
+    dataset_name: base.receipt_transactions
+    type: dataset
+    version: 1.1.0
+    start_at: earliest
+  optimism.receipt_transactions:
+    dataset_name: optimism.receipt_transactions
+    type: dataset
+    version: 1.1.0
+    start_at: earliest
+  optimism_sepolia.transaction_receipts:
+    dataset_name: optimism_sepolia.transaction_receipts
+    type: dataset
+    version: 1.0.0
+    start_at: earliest
+  ethereum.raw_transactions:
+    dataset_name: ethereum.raw_transactions
+    type: dataset
+    version: 1.1.0
+    start_at: earliest
+  ethereum_sepolia.receipt_transactions:
+    dataset_name: ethereum_sepolia.receipt_transactions
+    type: dataset
+    version: 1.1.0
+    start_at: earliest
+  celo.transaction_receipts:
+    dataset_name: celo.transaction_receipts
+    type: dataset
+    version: 1.0.0
+    start_at: earliest
+  mode.transaction_receipts:
+    dataset_name: mode.transaction_receipts
+    type: dataset
+    version: 1.0.0
+    start_at: earliest
+  mode_testnet.transaction_receipts:
+    dataset_name: mode_testnet.transaction_receipts
+    type: dataset
+    version: 1.0.0
+    start_at: earliest
+
+transforms:
+  user_transaction_superchain_mirror:
+    sql: >
+      WITH transactions AS (
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'base_sepolia' AS blockchain,
+          user_wallet
+        FROM base_sepolia_receipt_transactions
+        UNION ALL
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'base' AS blockchain,
+          user_wallet
+        FROM base_receipt_transactions
+        UNION ALL
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'optimism' AS blockchain,
+          user_wallet
+        FROM optimism_receipt_transactions
+        UNION ALL
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'optimism_sepolia' AS blockchain,
+          user_wallet
+        FROM optimism_sepolia_transaction_receipts
+        UNION ALL
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'ethereum_sepolia' AS blockchain,
+          user_wallet
+        FROM ethereum_sepolia_receipt_transactions
+        UNION ALL
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'celo' AS blockchain,
+          user_wallet
+        FROM celo_transaction_receipts
+        UNION ALL
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'mode' AS blockchain,
+          user_wallet
+        FROM mode_transaction_receipts
+        UNION ALL
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'mode_testnet' AS blockchain,
+          user_wallet
+        FROM mode_testnet_transaction_receipts
+        UNION ALL
+        SELECT 
+          from_address, 
+          to_address, 
+          value,
+          block_timestamp,
+          'ethereum' AS blockchain,
+          user_wallet
+        FROM ethereum_raw_transactions
+      )
+      SELECT 
+        t.user_wallet,
+        u.userId,
+        t.from_address,
+        t.to_address,
+        t.value,
+        t.block_timestamp,
+        t.blockchain
+      FROM transactions t
+      JOIN (
+        SELECT 
+          vc.address AS user_wallet,
+          u.id AS userId
+        FROM verified_credentials vc
+        JOIN users u ON u.id = vc.userId
+        WHERE vc.format = 'blockchain' AND vc.address IS NOT NULL
+      ) u ON t.user_wallet = u.user_wallet
+      WHERE u.userId = '{{ userId }}'
+      ORDER BY t.block_timestamp DESC
+    primary_key: id
+
+sinks:
+ postgres_user_transaction_superchain_mirror:
+    type: postgres
+    table: user_transaction_superchain_mirror
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: 'Postgres sink for BooFi's user's transaction superchain mirror for Superhack 2024'
+    from: user_transaction_superchain_mirror
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+    conditional_upsert_column: block_timestamp
+  postgres_base_sepolia_receipt_transactions:
+    type: postgres
+    table: base_sepolia_receipt_transactions
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: "Postgres sink for: base_sepolia_receipt_transactions"
+    from: base_sepolia_receipt_transactions
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_base_receipt_transactions:
+    type: postgres
+    table: base_receipt_transactions
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: "Postgres sink for: base.receipt_transactions"
+    from: base.receipt_transactions
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_optimism_receipt_transactions:
+    type: postgres
+    table: optimism_receipt_transactions
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: "Postgres sink for: optimism.receipt_transactions"
+    from: optimism.receipt_transactions
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_optimism_receipt_transactions:
+    type: postgres
+    table: optimism_receipt_transactions
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: 'Postgres sink for: optimism.receipt_transactions'
+    from: optimism.receipt_transactions
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_optimism_sepolia_transaction_receipts:
+    type: postgres
+    table: optimism_sepolia_transaction_receipts
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: 'Postgres sink for: optimism_sepolia.transaction_receipts'
+    from: optimism_sepolia.transaction_receipts
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_ethereum_sepolia_receipt_transactions:
+    type: postgres
+    table: ethereum_sepolia_receipt_transactions
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: 'Postgres sink for: ethereum_sepolia.receipt_transactions'
+    from: ethereum_sepolia.receipt_transactions
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_celo_transaction_receipts:
+    type: postgres
+    table: celo_transaction_receipts
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: 'Postgres sink for: celo.transaction_receipts'
+    from: celo.transaction_receipts
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_mode_transaction_receipts:
+    type: postgres
+    table: mode_transaction_receipts
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: 'Postgres sink for: mode.transaction_receipts'
+    from: mode.transaction_receipts
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_mode_testnet_transaction_receipts:
+    type: postgres
+    table: mode_testnet_transaction_receipts
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: 'Postgres sink for: mode_testnet.transaction_receipts'
+    from: mode_testnet.transaction_receipts
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
+  postgres_ethereum_raw_transactions:
+    type: postgres
+    table: ethereum_raw_transactions
+    schema: public
+    secret_name: ${POSTGRES_SECRET}
+    description: 'Postgres sink for: ethereum.raw_transactions'
+    from: ethereum.raw_transactions
+    batch_size: 1000
+    batch_flush_interval: '3s'
+    rewrite_batched_inserts: true
