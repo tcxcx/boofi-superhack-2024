@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { QRCode } from "react-qrcode-logo";
 import SentTable from "@/components/tables/sent-table";
 import { useDeezNuts } from "@/hooks/use-peanut";
+import { useMiniPayDeezNuts } from "@/hooks/use-minipay-links";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { currencyAddresses } from "@/utils/currencyAddresses";
 import { getNetwork, useUserWallets } from "@dynamic-labs/sdk-react-core";
@@ -36,12 +37,14 @@ interface TransactionDetails {
 }
 
 export default function LinkForm() {
-  const {
-    createPayLink,
-    isLoading: isPeanutLoading,
-    copyToClipboard,
-    truncateHash,
-  } = useDeezNuts();
+  const { isMiniPay, setCurrentChainId } = useAuthStore();
+
+  const { createPayLink, isLoading: isPeanutLoading } = isMiniPay
+    ? useMiniPayDeezNuts()
+    : useDeezNuts();
+
+  const { copyToClipboard, truncateHash } = useDeezNuts();
+
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [usdAmount, setUsdAmount] = useState<number>(0);
   const [tokenAmount, setTokenAmount] = useState<number>(0);
@@ -60,7 +63,6 @@ export default function LinkForm() {
     null
   );
   const [destinationToken, setDestinationToken] = useState<string | null>(null);
-  const { isMiniPay, setCurrentChainId } = useAuthStore();
 
   useEffect(() => {
     const fetchNetwork = async () => {
@@ -148,7 +150,7 @@ export default function LinkForm() {
       setTimeout(shoot, 100);
       setTimeout(shoot, 200);
     } finally {
-      setOverlayVisible(true); // Ensure the overlay remains visible
+      setOverlayVisible(true);
     }
   };
 

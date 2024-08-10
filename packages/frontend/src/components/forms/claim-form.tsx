@@ -420,24 +420,24 @@ export default function ClaimForm({
                                             }
                                           </h3>
                                         </div>
+                                        <div className="flex items-center justify-between mt-5">
+                                          <p className="text-xs font-bold hover:underline hover:text-primary">
+                                            <Link
+                                              href={`${getBlockExplorerUrlByChainId(
+                                                paymentInfo?.chainId as number
+                                              )}/tx/${transactionDetails}`}
+                                              target="_blank"
+                                              className="flex items-center"
+                                            >
+                                              <span>View in Blockscout</span>
+                                              <ChevronRightIcon className="size-4" />
+                                            </Link>
+                                          </p>
+                                        </div>
                                       </div>
                                     )}
                                   </div>
                                 )}
-                              </div>
-                              <div className="flex items-center justify-between mt-5">
-                                <p className="text-xs font-bold hover:underline hover:text-primary">
-                                  <Link
-                                    href={`${getBlockExplorerUrlByChainId(
-                                      paymentInfo?.chainId as number
-                                    )}/tx/${transactionDetails}`}
-                                    target="_blank"
-                                    className="flex items-center"
-                                  >
-                                    <span>View in Blockscout</span>
-                                    <ChevronRightIcon className="size-4" />
-                                  </Link>
-                                </p>
                               </div>
                             </div>
                           </>

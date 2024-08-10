@@ -294,16 +294,14 @@ export const useDeezNuts = () => {
         const transactionHashes: string[] = [];
 
         for (const unsignedTx of preparedTransactions.unsignedTxs) {
-          const txValue = unsignedTx.value
-            ? BigInt(unsignedTx.value.toString())
-            : undefined;
           const txHash = await walletClient.sendTransaction({
             account: userAddress as `0x${string}`,
             to: unsignedTx.to as `0x${string}`,
             data: unsignedTx.data as `0x${string}`,
-            value: txValue && txValue > BigInt(0) ? txValue : undefined,
+            value: unsignedTx.value
+              ? BigInt(unsignedTx.value.toString())
+              : undefined,
           });
-
           transactionHashes.push(txHash);
           onInProgress?.();
         }
