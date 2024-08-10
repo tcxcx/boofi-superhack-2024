@@ -6,12 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_appwrite_1 = require("node-appwrite");
 const serverless_1 = require("@neondatabase/serverless");
 const crypto_1 = __importDefault(require("crypto"));
-const { NEON_DATABASE_URL, APPWRITE_ENDPOINT, APPWRITE_FUNCTION_PROJECT_ID, APPWRITE_API_KEY, APPWRITE_WEBHOOK_SECRET, } = process.env;
+const { NEON_DATABASE_URL, APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY, APPWRITE_WEBHOOK_SECRET, } = process.env;
 async function default_1({ req, res, log, error, }) {
     const client = new node_appwrite_1.Client();
     client
         .setEndpoint(APPWRITE_ENDPOINT)
-        .setProject(APPWRITE_FUNCTION_PROJECT_ID)
+        .setProject(APPWRITE_PROJECT_ID)
         .setKey(APPWRITE_API_KEY);
     const database = new node_appwrite_1.Databases(client);
     const sql = (0, serverless_1.neon)(NEON_DATABASE_URL);

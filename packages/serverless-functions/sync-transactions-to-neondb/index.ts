@@ -5,7 +5,7 @@ import crypto from "crypto";
 const {
   NEON_DATABASE_URL,
   APPWRITE_ENDPOINT,
-  APPWRITE_FUNCTION_PROJECT_ID,
+  APPWRITE_PROJECT_ID,
   APPWRITE_API_KEY,
   APPWRITE_WEBHOOK_SECRET,
 } = process.env;
@@ -25,7 +25,7 @@ export default async function ({
 
   client
     .setEndpoint(APPWRITE_ENDPOINT!)
-    .setProject(APPWRITE_FUNCTION_PROJECT_ID!)
+    .setProject(APPWRITE_PROJECT_ID!)
     .setKey(APPWRITE_API_KEY!);
 
   const database = new Databases(client);
