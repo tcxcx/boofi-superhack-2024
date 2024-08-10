@@ -14,7 +14,28 @@ sources:
     version: 1.1.0
     start_at: earliest
 
-transforms: {}
+transforms:
+  user_transaction_superchain_mirror:
+    sql: |
+      WITH transactions AS (
+        SELECT
+          from_address AS user_wallet,
+          `value` AS amount,
+          block_timestamp
+        FROM (
+          SELECT from_address, `value`, block_timestamp FROM base.receipt_transactions
+          UNION ALL
+          SELECT from_address, `value`, block_timestamp FROM optimism.receipt_transactions
+        ) AS receipt_transactions
+      )
+      SELECT
+        transactions.user_wallet AS user_wallet,
+        transactions.amount AS amount,
+        transactions.block_timestamp AS block_timestamp
+      FROM transactions
+      ORDER BY transactions.block_timestamp DESC
+      LIMIT 100;
+    primary_key: id
 
 sinks:
   postgres_base_receipt_transactions:

@@ -7,6 +7,7 @@ import { useAccount, useConnect, useSwitchChain } from "wagmi";
 import { getNetwork } from "@dynamic-labs/sdk-react-core";
 import { celoAlfajores } from "viem/chains";
 import { useAuthStore } from "@/store/authStore";
+import { initialSync } from "@/lib/actions/sync-db";
 
 interface HomeContentProps {
   translations: Translations["Home"];
@@ -23,6 +24,18 @@ export const HomeContent: React.FC<HomeContentProps> = ({ translations }) => {
   const { connect, connectors } = useConnect();
   const { switchChain } = useSwitchChain();
   const { isMiniPay, setMiniPay, setUserAddress } = useAuthStore();
+  
+  useEffect(() => {
+    async function syncData() {
+      try {
+        await initialSync();
+      } catch (error) {
+        console.error("Initial sync failed:", error);
+      }
+    }
+
+    syncData();
+  }, []);
 
   useEffect(() => {
     const checkMiniPay = async () => {
