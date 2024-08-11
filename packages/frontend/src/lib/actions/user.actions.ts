@@ -28,6 +28,7 @@ const {
   APPWRITE_DATABASE_ID: DATABASE_ID,
   APPWRITE_USERS_COLLECTION_ID: USERS_COLLECTION_ID,
   APPWRITE_BANK_COLLECTION_ID: BANK_COLLECTION_ID,
+  APPWRITE_WALLET_COLLECTION_ID: WALLET_COLLECTION_ID,
   APPWRITE_VERIFIED_CREDENTIALS_COLLECTION_ID:
     VERIFIED_CREDENTIALS_COLLECTION_ID,
 } = process.env;
@@ -288,6 +289,58 @@ export const updateUserPlaidStatus = async (
     console.log(`User ${userId} Plaid connection status updated to ${status}`);
   } catch (error) {
     console.error("Error updating user Plaid connection status:", error);
+    throw error;
+  }
+};
+
+export const createOrUpdateWallet = async ({
+  userId,
+  walletAddress,
+  walletName,
+  walletProvider,
+}: {
+  userId: string;
+  walletAddress: string;
+  walletName: string;
+  walletProvider: string;
+}) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const existingWallets = await database.listDocuments(
+      DATABASE_ID!,
+      WALLET_COLLECTION_ID!,
+      [Query.equal("user_id", userId), Query.equal("key", walletAddress)]
+    );
+
+    if (existingWallets.total > 0) {
+      const walletId = existingWallets.documents[0].$id;
+      const updatedWallet = await database.updateDocument(
+        DATABASE_ID!,
+        WALLET_COLLECTION_ID!,
+        walletId,
+        {
+          value: walletName,
+          walletProvider,
+        }
+      );
+      return updatedWallet;
+    } else {
+      const newWallet = await database.createDocument(
+        DATABASE_ID!,
+        WALLET_COLLECTION_ID!,
+        ID.unique(),
+        {
+          user_id: userId,
+          key: walletAddress,
+          value: walletName,
+          walletProvider,
+        }
+      );
+      return newWallet;
+    }
+  } catch (error) {
+    console.error("Error creating or updating wallet:", error);
     throw error;
   }
 };

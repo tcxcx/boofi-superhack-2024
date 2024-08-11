@@ -85,7 +85,7 @@ const PlaidLink = ({
   }
 
   if (error) {
-    console.error("Error fetching user:", error);
+    console.error("Error fetching user from PlaidLink:", error);
     if (onFailed) onFailed();
     return <Button disabled>Error: Unable to connect bank</Button>;
   }

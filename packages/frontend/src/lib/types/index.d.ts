@@ -88,6 +88,15 @@ declare type Transaction = {
   senderBankId: string;
   receiverBankId: string;
 };
+
+declare type CryptoTransaction = {
+  from_address: string;
+  to_address: string;
+  value: string;
+};
+
+export type UnifiedTransaction = Transaction | CryptoTransaction;
+
 declare type TokenBalance = {
   networkId: number;
   marketValue: number;
@@ -267,8 +276,9 @@ declare interface CategoryBadgeProps {
   category: string;
 }
 
-declare interface TransactionTableProps {
-  transactions: Transaction[];
+export interface TransactionTableProps {
+  transactions: UnifiedTransaction[];
+  isCrypto?: boolean;
 }
 
 declare interface CategoryProps {
