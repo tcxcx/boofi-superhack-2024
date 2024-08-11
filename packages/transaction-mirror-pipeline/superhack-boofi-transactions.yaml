@@ -15,13 +15,12 @@ sources:
     start_at: earliest
 
 transforms: {}
-
 sinks:
   postgres_base_receipt_transactions:
     type: postgres
     table: base_receipt_transactions
     schema: public
-    secret_name: POSTGRES_SECRET_CLZNJPZLN0
+    secret_name: POSTGRES_SECRET_CLZP4F3XZ0
     description: "Postgres sink for: base.receipt_transactions"
     from: base.receipt_transactions
     batch_size: 1000
@@ -31,7 +30,7 @@ sinks:
     type: postgres
     table: optimism_receipt_transactions
     schema: public
-    secret_name: POSTGRES_SECRET_CLZNJPZLN0
+    secret_name: POSTGRES_SECRET_CLZP4F3XZ0
     description: "Postgres sink for: optimism.receipt_transactions"
     from: optimism.receipt_transactions
     batch_size: 1000
