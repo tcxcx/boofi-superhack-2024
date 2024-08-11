@@ -9,7 +9,7 @@ BooFi is a user-friendly, decentralized financial inclusion platform designed to
 ### **Key Features:**
 
 - **Peanut Protocol Integration:** For secure and efficient link payments.
-- **Minipay Support:** Tailored for Celo, facilitating micro-payments through Minipay link payments.
+- **Minipay Support:** Tailored for Celo and Opera Mini, facilitating micro-payments through Minipay link payments.
 - **Blockscout Integration:** Users can view their transaction history via Blockscout, enhancing transparency and trust for link payment transactions.
 - **WorldId Sign-In:** Our integration with NextAuth ensures secure, session-based authentication, leveraging WorldId for identity verification, and Sybil-resistant attestation service for credit scoring.
 - **Base Payments Tracking:** Comprehensive tracking and display of user transactions across the Base and Optimism blockchains.
