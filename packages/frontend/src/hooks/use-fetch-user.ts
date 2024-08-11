@@ -29,7 +29,7 @@ export function useAppwriteUser(userId: string | undefined) {
         const userData = await response.json();
         setAppwriteUser(userData);
       } catch (err) {
-        console.error("Error fetching user:", err);
+        console.error("Error fetching user from fetch hook user:", err);
         setError(err instanceof Error ? err : new Error("An error occurred"));
       } finally {
         setLoading(false);

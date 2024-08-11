@@ -1,18 +1,21 @@
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BankTabItem } from "./BankTabItem";
+import { WalletTabItem } from "./WalletTabItem";
 import BankInfo from "./BankInfo";
 import TransactionsTable from "./TransactionsTable";
 import { Pagination } from "./Pagination";
 import BlurFade from "../magicui/blur-fade";
-import { Transaction, Account } from "@/lib/types";
+import { Account, UnifiedTransaction, CryptoTransaction } from "@/lib/types";
 
 interface RecentTransactionsProps {
   accounts: Account[];
-  transactions: Transaction[];
+  transactions: UnifiedTransaction[];
   appwriteItemId: string;
   page: number;
   userId: string;
+  wallets: string[];
+  walletTransactions: Record<string, CryptoTransaction[]>;
 }
 
 const RecentTransactions = ({
@@ -21,6 +24,8 @@ const RecentTransactions = ({
   appwriteItemId,
   page = 1,
   userId,
+  wallets = [],
+  walletTransactions = {},
 }: RecentTransactionsProps) => {
   const rowsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / rowsPerPage);
@@ -55,6 +60,11 @@ const RecentTransactions = ({
               />
             </TabsTrigger>
           ))}
+          {wallets.map((wallet) => (
+            <TabsTrigger key={wallet} value={wallet}>
+              <WalletTabItem wallet={wallet} />
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {accounts.map((account: Account) => (
@@ -74,6 +84,26 @@ const RecentTransactions = ({
             {totalPages > 1 && (
               <div className="my-4 w-full">
                 <Pagination totalPages={totalPages} page={page} />
+              </div>
+            )}
+          </TabsContent>
+        ))}
+
+        {wallets.map((wallet) => (
+          <TabsContent value={wallet} key={wallet} className="space-y-4">
+            <TransactionsTable
+              transactions={walletTransactions[wallet] || []}
+              isCrypto
+            />
+
+            {walletTransactions[wallet]?.length > rowsPerPage && (
+              <div className="my-4 w-full">
+                <Pagination
+                  totalPages={Math.ceil(
+                    walletTransactions[wallet].length / rowsPerPage
+                  )}
+                  page={page}
+                />
               </div>
             )}
           </TabsContent>

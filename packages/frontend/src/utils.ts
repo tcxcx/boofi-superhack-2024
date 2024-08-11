@@ -186,6 +186,13 @@ export function getAccountTypeColors(type: AccountTypes) {
         title: "text-success-900",
         subText: "text-success-700",
       };
+    case "other":
+      return {
+        bg: "bg-success-25",
+        lightBg: "bg-success-100",
+        title: "text-success-900",
+        subText: "text-success-700",
+      };
 
     default:
       return {

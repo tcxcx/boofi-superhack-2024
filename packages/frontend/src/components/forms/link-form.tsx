@@ -252,19 +252,6 @@ export default function LinkForm() {
       <div className="flex justify-between w-full space-x-2">
         <Button
           size={"lg"}
-          variant="outline"
-          className="mt-5 flex items-center gap-2 self-end"
-          onClick={handleViewMovementsClick}
-        >
-          {showSentTable ? "Hide movements" : "Show movements"}
-          {showSentTable ? (
-            <ChevronUpIcon className="size-4" />
-          ) : (
-            <ChevronDownIcon className="size-4" />
-          )}
-        </Button>
-        <Button
-          size={"lg"}
           className="mt-5 flex items-center gap-2 self-end w-full"
           onClick={handleCreateLinkClick}
           variant={"fito"}

@@ -2,59 +2,64 @@ apiVersion: 3
 name: superhack-boofi-transactions
 status: ACTIVE
 resource_size: s
+
 sources:
   base.receipt_transactions:
     dataset_name: base.receipt_transactions
     type: dataset
     version: 1.2.0
-    start_at: earliest
+    start_at: latest
+
   optimism.receipt_transactions:
     dataset_name: optimism.receipt_transactions
     type: dataset
     version: 1.1.0
-    start_at: earliest
+    start_at: latest
 
 transforms:
-  user_transaction_superchain_mirror:
+  filtered_transactions:
     sql: |
       WITH transactions AS (
         SELECT
-          from_address AS user_wallet,
-          `value` AS amount,
+          from_address,
+          to_address,
+          `value`,
           block_timestamp
         FROM (
-          SELECT from_address, `value`, block_timestamp FROM base.receipt_transactions
+          SELECT from_address, to_address, `value`, block_timestamp FROM base.receipt_transactions
           UNION ALL
-          SELECT from_address, `value`, block_timestamp FROM optimism.receipt_transactions
+          SELECT from_address, to_address, `value`, block_timestamp FROM optimism.receipt_transactions
         ) AS receipt_transactions
       )
       SELECT
-        transactions.user_wallet AS user_wallet,
-        transactions.amount AS amount,
+        transactions.from_address AS from_address,
+        transactions.to_address AS to_address,
+        transactions.`value` AS `value`,
         transactions.block_timestamp AS block_timestamp
       FROM transactions
       ORDER BY transactions.block_timestamp DESC
       LIMIT 100;
-    primary_key: id
+    primary_key: from_address
 
 sinks:
   postgres_base_receipt_transactions:
     type: postgres
     table: base_receipt_transactions
     schema: public
-    secret_name: POSTGRES_SECRET_CLZNJPZLN0
+    secret_name: POSTGRES_SECRET_CLZP4RCGH0
     description: "Postgres sink for: base.receipt_transactions"
-    from: base.receipt_transactions
+    from: filtered_transactions
     batch_size: 1000
     batch_flush_interval: "3s"
     rewrite_batched_inserts: true
+
   postgres_optimism_receipt_transactions:
     type: postgres
     table: optimism_receipt_transactions
     schema: public
-    secret_name: POSTGRES_SECRET_CLZNJPZLN0
+    secret_name: POSTGRES_SECRET_CLZP4RCGH0
     description: "Postgres sink for: optimism.receipt_transactions"
-    from: optimism.receipt_transactions
+    from: filtered_transactions
     batch_size: 1000
     batch_flush_interval: "3s"
     rewrite_batched_inserts: true
