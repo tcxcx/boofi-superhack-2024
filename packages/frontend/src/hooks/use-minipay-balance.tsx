@@ -1,21 +1,22 @@
 import { useState, useEffect } from "react";
 import { createPublicClient, getContract, http, formatEther } from "viem";
-import { celo, celoAlfajores } from "viem/chains";
+import { celoAlfajores, celo } from "viem/chains";
 import { useAuthStore } from "@/store/authStore";
-import { currencyAddresses } from "@/utils/currencyAddresses";
 import CUSD_ABI from "@/utils/abis/cusd-abi.json";
 
-// Map ABIs for tokens (e.g., CUSD)
+const isTestnet = process.env.NEXT_PUBLIC_USE_TESTNET === "true";
+const chain = isTestnet ? celoAlfajores : celo;
+const cUSDTokenAddress = isTestnet
+  ? "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1"
+  : "0x765de816845861e75a25fca122bb6898b8b1282a";
+
+const publicClient = createPublicClient({
+  chain: chain,
+  transport: http(),
+});
+
 const abiMapping: Record<string, any> = {
   CUSD: CUSD_ABI.abi,
-};
-
-const getPublicClient = (isMiniPay: boolean) => {
-  const chain = isMiniPay ? celoAlfajores : celo;
-  return createPublicClient({
-    chain,
-    transport: http(),
-  });
 };
 
 export const useEnhancedMinipayBalances = () => {
@@ -23,8 +24,6 @@ export const useEnhancedMinipayBalances = () => {
   const [balances, setBalances] = useState<{ [key: string]: string }>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-
-  const publicClient = getPublicClient(isMiniPay);
 
   const fetchTokenBalance = async (
     symbol: string,
@@ -57,6 +56,8 @@ export const useEnhancedMinipayBalances = () => {
   };
 
   useEffect(() => {
+    if (!isMiniPay) return;
+
     const fetchBalances = async () => {
       setLoading(true);
       setError(null);
@@ -80,17 +81,17 @@ export const useEnhancedMinipayBalances = () => {
 
         const tokenBalances: { [key: string]: string } = {};
 
-        const chainId = isMiniPay ? celo.id : celoAlfajores.id;
-        const tokens = currencyAddresses[chainId];
+        const tokens = {
+          CUSD: cUSDTokenAddress,
+          CELO: "0x0000000000000000000000000000000000000000", // CELO native address
+        };
         for (const [symbol, tokenAddress] of Object.entries(tokens)) {
-          if (symbol === "CUSD" || symbol === "CELO") {
-            const balance = await fetchTokenBalance(
-              symbol,
-              tokenAddress,
-              address
-            );
-            tokenBalances[symbol] = balance;
-          }
+          const balance = await fetchTokenBalance(
+            symbol,
+            tokenAddress,
+            address
+          );
+          tokenBalances[symbol] = balance;
         }
 
         setBalances(tokenBalances);

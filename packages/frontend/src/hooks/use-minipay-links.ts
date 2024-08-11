@@ -9,6 +9,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { celo, celoAlfajores } from "viem/chains";
 import { useAuthStore } from "@/store/authStore";
 
+const isTestnet = process.env.NEXT_PUBLIC_USE_TESTNET === "true";
+const chain = isTestnet ? celoAlfajores : celo;
+const cUSDTokenAddress = isTestnet
+  ? "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1"
+  : "0x765de816845861e75a25fca122bb6898b8b1282a";
+
 const PEANUTAPIKEY = process.env.NEXT_PUBLIC_DEEZ_NUTS_API_KEY;
 
 if (!PEANUTAPIKEY) {
@@ -26,31 +32,24 @@ export const useMiniPayDeezNuts = () => {
     try {
       return await getRandomString(16);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       throw new Error("Error generating the password.");
     }
   };
 
-  const getChainConfig = () => {
-    return process.env.NEXT_PUBLIC_USE_TESTNET === "true"
-      ? celoAlfajores
-      : celo;
-  };
-
-  const getUserAddress = async () => {
+  const getUserAddress = async (): Promise<string | null> => {
     if (typeof window !== "undefined" && window.ethereum) {
-      const chainConfig = getChainConfig();
-      let walletClient = createWalletClient({
-        transport: custom(window.ethereum),
-        chain: chainConfig,
+      const walletClient = createWalletClient({
+        transport: custom(window.ethereum as any),
+        chain: chain,
       });
 
       const currentChainId = await walletClient.getChainId();
-      if (currentChainId !== chainConfig.id) {
+      if (currentChainId !== chain.id) {
         try {
           await walletClient.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: `0x${chainConfig.id.toString(16)}` }],
+            params: [{ chainId: `0x${chain.id.toString(16)}` }],
           });
         } catch (error) {
           console.error("Failed to switch the chain", error);
@@ -60,12 +59,11 @@ export const useMiniPayDeezNuts = () => {
         }
       }
 
-      let [address] = await walletClient.getAddresses();
-      return address;
+      const [address] = await walletClient.getAddresses();
+      return address || null;
     }
     return null;
   };
-
   const prepareDepositTxs = useCallback(
     async ({
       _linkDetails,
@@ -92,7 +90,6 @@ export const useMiniPayDeezNuts = () => {
         throw error;
       }
     },
-
     [getUserAddress]
   );
 
@@ -106,12 +103,10 @@ export const useMiniPayDeezNuts = () => {
   ) => {
     setIsLoading(true);
     try {
-      const chainConfig = getChainConfig();
-
       const linkDetails = {
-        chainId: chainConfig.id.toString(),
+        chainId: chain.id.toString(),
         tokenAmount: parseFloat(Number(amount).toFixed(6)),
-        tokenType: 0,
+        tokenType: 1,
         tokenAddress: tokenAddress,
         tokenDecimals: 18,
         baseUrl: `${window.location.origin}/claim`,
@@ -119,10 +114,6 @@ export const useMiniPayDeezNuts = () => {
       };
 
       const password = await generatePassword();
-
-      if (!window.ethereum) {
-        throw new Error("Ethereum provider not found");
-      }
 
       const userAddress = await getUserAddress();
       if (!userAddress) {
@@ -132,8 +123,8 @@ export const useMiniPayDeezNuts = () => {
       }
 
       const walletClient = createWalletClient({
-        transport: custom(window.ethereum),
-        chain: chainConfig,
+        transport: custom(window.ethereum as any),
+        chain: chain,
       });
 
       const preparedTransactions = await prepareDepositTxs({
