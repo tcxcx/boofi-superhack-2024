@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { spawn } from "child_process";
-import path from "path";
+import fetch from "node-fetch"; // Use node-fetch for making HTTP requests
+
+// Define the expected type of the response data
+type ResponseData = {
+  userId: string;
+  defiPotentialScore: number;
+  maxLoanAmount: number;
+  rationale: string;
+  totalAttested: number;
+  timestamp: string;
+  error?: string;
+};
 
 export async function POST(req: NextRequest): Promise<Response> {
-  // Explicitly type the return value
   const { userId, cryptoBalances } = await req.json();
 
   if (!userId) {
@@ -13,76 +22,61 @@ export async function POST(req: NextRequest): Promise<Response> {
   console.log("Received userId:", userId);
   console.log("Received cryptoBalances:", cryptoBalances);
 
-  const scriptPath = path.join(
-    process.cwd(),
-    "..",
-    "boofi-potential-index",
-    "defi_potential_algorithm.py"
-  );
-
-  return new Promise((resolve) => {
-    const pythonProcess = spawn("conda", [
-      "run",
-      "-n",
-      "boofi-env",
-      "python",
-      scriptPath,
-      userId,
-      JSON.stringify(cryptoBalances || { totalBalanceUSD: 0 }),
-    ]);
-
-    let outputData = "";
-    let errorData = "";
-
-    pythonProcess.stdout.on("data", (data) => {
-      outputData += data.toString();
+  try {
+    const response = await fetch(process.env.APPWRITE_FUNCTION_URL!, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Appwrite-Project": process.env.APPWRITE_FUNCTION_PROJECT_ID!,
+        "X-Appwrite-Key": process.env.NEXT_APPWRITE_KEY!,
+      },
+      body: JSON.stringify({
+        userId,
+        cryptoBalances: JSON.stringify(
+          cryptoBalances || { totalBalanceUSD: 0 }
+        ),
+      }),
     });
 
-    pythonProcess.stderr.on("data", (data) => {
-      errorData += data.toString();
-      console.error(`Python script error: ${data}`);
-    });
+    const responseData = (await response.json()) as ResponseData;
 
-    pythonProcess.on("close", (code) => {
-      if (code !== 0) {
-        console.error("Python script error output:", errorData);
-        resolve(
-          NextResponse.json(
-            { error: "Error executing Python script", details: errorData },
-            { status: 500 }
-          )
-        );
-      } else {
-        try {
-          console.log("Script output data:", outputData);
+    if (!response.ok) {
+      console.error("Serverless function error:", responseData);
+      return NextResponse.json(
+        {
+          error: "Error executing serverless function",
+          details: responseData,
+        },
+        { status: 500 }
+      );
+    }
 
-          const jsonOutput = JSON.parse(outputData);
+    console.log("Function output:", responseData);
 
-          if (
-            typeof jsonOutput.userId !== "string" ||
-            typeof jsonOutput.defiPotentialScore !== "number" ||
-            typeof jsonOutput.maxLoanAmount !== "number" ||
-            typeof jsonOutput.rationale !== "string" ||
-            typeof jsonOutput.timestamp !== "string"
-          ) {
-            throw new Error("Invalid output format from Python script");
-          }
-
-          resolve(NextResponse.json(jsonOutput));
-        } catch (error: any) {
-          console.error("Error parsing script output:", error);
-          resolve(
-            NextResponse.json(
-              {
-                error: "Error parsing script output",
-                details: error.message,
-                output: outputData,
-              },
-              { status: 500 }
-            )
-          );
-        }
+    // Validate the output format
+    const expectedFields = [
+      "userId",
+      "defiPotentialScore",
+      "maxLoanAmount",
+      "rationale",
+      "timestamp",
+    ];
+    for (const field of expectedFields) {
+      if (!(field in responseData)) {
+        throw new Error(`Missing expected field: ${field}`);
       }
-    });
-  });
+    }
+
+    // Return the correctly formatted JSON response
+    return NextResponse.json(responseData);
+  } catch (error: any) {
+    console.error("Error communicating with serverless function:", error);
+    return NextResponse.json(
+      {
+        error: "Error communicating with serverless function",
+        details: error.message,
+      },
+      { status: 500 }
+    );
+  }
 }
