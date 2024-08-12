@@ -1,4 +1,5 @@
 import json
+import requests
 
 def main(context):
     context.log('Executing DeFi Potential Calculation function')
@@ -42,11 +43,17 @@ def main(context):
 
 def fetch_user_data(context, user_id):
     context.log(f"Fetching data for user: {user_id}")
-    return {
-        "bankAccounts": {
-            "totalCurrentBalance": 50000  # Example balance
-        }
-    }
+    api_url = f"http://boofi.xyz/api/eas/user-financial-data?userId={user_id}"
+    
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()  # Raises an HTTPError for bad responses
+        data = response.json()
+        context.log(f"Fetched financial data: {data}")
+        return data
+    except requests.RequestException as e:
+        context.error(f"Failed to fetch user data: {str(e)}")
+        raise Exception(f"Failed to fetch user data: {str(e)}")
 
 def calculate_defi_potential(financial_data, crypto_balances):
     bank_balance = financial_data.get('bankAccounts', {}).get('totalCurrentBalance', 0)
