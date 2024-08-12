@@ -52,19 +52,17 @@ def main(context):
           .set_project(os.environ["APPWRITE_FUNCTION_PROJECT_ID"]) \
           .set_key(os.environ["APPWRITE_API_KEY"]) \
     
-    user_id = context.req.payload.get('userId')
-    crypto_balances_str = context.req.payload.get('cryptoBalances', '{}')
-
-    client.log(f"Received user_id: {user_id}")
-    client.log(f"Received crypto_balances: {crypto_balances_str}")
-
     try:
+        # Access the JSON payload directly
+        payload = context.req.json
+        user_id = payload.get('userId')
+        crypto_balances_str = payload.get('cryptoBalances', '{}')
+
+        client.log(f"Received user_id: {user_id}")
+        client.log(f"Received crypto_balances: {crypto_balances_str}")
+
         crypto_balances = json.loads(crypto_balances_str)
-    except json.JSONDecodeError:
-        client.error(f"Error decoding JSON: {crypto_balances_str}")
-        crypto_balances = {"totalBalanceUSD": 0}
 
-    try:
         financial_data = fetch_user_data(user_id, client)
         result = calculate_defi_potential(financial_data, crypto_balances, client)
         output = {
@@ -74,6 +72,9 @@ def main(context):
         }
         client.log(f"Output: {output}")
         return context.res.json(output)
+    except json.JSONDecodeError as e:
+        client.error(f"Error decoding JSON: {e}")
+        return context.res.json({"error": "Invalid JSON payload"}, 400)
     except Exception as e:
         client.error(f"An error occurred: {str(e)}")
         return context.res.json({"error": str(e)}, 500)
