@@ -53,8 +53,8 @@ def main(context):
           .set_key(os.environ["APPWRITE_API_KEY"]) \
     
     try:
-        # Access the JSON payload directly
-        payload = context.req.json
+        # Access the raw request body and parse as JSON
+        payload = json.loads(context.req)
         user_id = payload.get('userId')
         crypto_balances_str = payload.get('cryptoBalances', '{}')
 
@@ -73,8 +73,8 @@ def main(context):
         client.log(f"Output: {output}")
         return context.res.json(output)
     except json.JSONDecodeError as e:
-        client.error(f"Error decoding JSON: {e}")
+        client.log(f"Error decoding JSON: {e}")
         return context.res.json({"error": "Invalid JSON payload"}, 400)
     except Exception as e:
-        client.error(f"An error occurred: {str(e)}")
+        client.log(f"An error occurred: {str(e)}")
         return context.res.json({"error": str(e)}, 500)
