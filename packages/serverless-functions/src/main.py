@@ -46,9 +46,8 @@ def calculate_defi_potential(financial_data, crypto_balances):
 
 def main(context):
     try:
-        # Read the raw request body as a stream and decode it
-        raw_body = context.req.read()
-        payload = json.loads(raw_body)
+        # Get payload from the request
+        payload = context.req['payload']  # Access the payload directly
 
         user_id = payload.get('userId')
         crypto_balances_str = payload.get('cryptoBalances', '{}')
