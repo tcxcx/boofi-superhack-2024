@@ -1,4 +1,3 @@
-from appwrite.client import Client
 import os
 import json
 import requests
@@ -46,12 +45,6 @@ def calculate_defi_potential(financial_data, crypto_balances):
     }
 
 def main(context):
-    # Initialize Appwrite client
-    client = Client()
-    client.set_endpoint("https://cloud.appwrite.io/v1") \
-          .set_project(os.environ["APPWRITE_FUNCTION_PROJECT_ID"]) \
-          .set_key(os.environ["APPWRITE_API_KEY"]) \
-    
     try:
         # Access the raw request body
         raw_body = context.req.read().decode('utf-8')
