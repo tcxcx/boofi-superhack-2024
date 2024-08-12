@@ -1,27 +1,57 @@
-import os
 import json
-import requests
 from datetime import datetime
 
-def fetch_user_data(user_id):
-    api_url = f"http://boofi.xyz/api/eas/user-financial-data?userId={user_id}"
-    response = requests.get(api_url)
-    if response.status_code == 200:
-        data = response.json()
-        print(f"Fetched financial data: {data}")  # Debug print
-        return data
-    else:
-        raise Exception(f"Failed to fetch user data: {response.status_code}")
+def main(context):
+    try:
+        # Get payload from the request
+        payload = json.loads(context.req.payload)
+        user_id = payload.get('userId')
+        crypto_balances = payload.get('cryptoBalances', {})
+
+        context.log(f"Received user_id: {user_id}")
+        context.log(f"Received crypto_balances: {crypto_balances}")
+
+        # Fetch user financial data
+        financial_data = fetch_user_data(context, user_id)
+
+        result = calculate_defi_potential(financial_data, crypto_balances)
+
+        output = {
+            "userId": user_id,
+            **result,
+            "timestamp": datetime.now().isoformat()
+        }
+
+        context.log(f"Output: {output}")
+        return context.res.json(output)
+
+    except json.JSONDecodeError as e:
+        context.error(f"Error decoding JSON: {e}")
+        return context.res.json({"error": "Invalid JSON payload"}, 400)
+    except Exception as e:
+        context.error(f"An error occurred: {str(e)}")
+        return context.res.json({"error": str(e)}, 500)
+
+def fetch_user_data(context, user_id):
+    # In a real Appwrite function, you might use context.env to get environment variables
+    # For now, we'll simulate fetching data
+    # You would replace this with actual database querying logic
+    context.log(f"Fetching data for user: {user_id}")
+    # Simulated data - replace with actual data fetching logic
+    return {
+        "bankAccounts": {
+            "totalCurrentBalance": 50000  # Example balance
+        }
+    }
 
 def calculate_defi_potential(financial_data, crypto_balances):
-    print(f"Financial data: {financial_data}") 
-    print(f"Crypto balances: {crypto_balances}")  # Debug print
+    context.log(f"Financial data: {financial_data}")
+    context.log(f"Crypto balances: {crypto_balances}")
 
-    bank_balance = financial_data['bankAccounts'].get('totalCurrentBalance', 0)
+    bank_balance = financial_data.get('bankAccounts', {}).get('totalCurrentBalance', 0)
     total_crypto_balance = float(crypto_balances.get('totalBalanceUSD', 0))
     total_balance = bank_balance + total_crypto_balance
 
-    # Credit score calculation
     if total_balance > 100000:
         score = 800
         max_loan = total_balance * 0.5
@@ -43,32 +73,3 @@ def calculate_defi_potential(financial_data, crypto_balances):
         "rationale": rationale,
         'totalAttested': total_balance,
     }
-
-def main(context):
-    try:
-        # Get payload from the request
-        payload = context.req['payload']  # Access the payload directly
-
-        user_id = payload.get('userId')
-        crypto_balances_str = payload.get('cryptoBalances', '{}')
-
-        context.log(f"Received user_id: {user_id}")
-        context.log(f"Received crypto_balances: {crypto_balances_str}")
-
-        crypto_balances = json.loads(crypto_balances_str)
-
-        financial_data = fetch_user_data(user_id)
-        result = calculate_defi_potential(financial_data, crypto_balances)
-        output = {
-            "userId": user_id,
-            **result,
-            "timestamp": datetime.now().isoformat()
-        }
-        context.log(f"Output: {output}")
-        return context.res.json(output)
-    except json.JSONDecodeError as e:
-        context.error(f"Error decoding JSON: {e}")
-        return context.res.json({"error": "Invalid JSON payload"}, 400)
-    except Exception as e:
-        context.error(f"An error occurred: {str(e)}")
-        return context.res.json({"error": str(e)}, 500)
