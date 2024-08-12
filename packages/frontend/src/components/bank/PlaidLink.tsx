@@ -15,8 +15,8 @@ import { useAppwriteUser } from "@/hooks/use-fetch-user";
 import { useAuthStore } from "@/store/authStore";
 import Spinner from "../ui/spinner";
 import { updateUserPlaidStatus } from "@/lib/actions/user.actions";
+import { debounce } from "lodash";
 
-// Define the RequiredEnsUser type
 export type RequiredEnsUser = CombinedUserProfile & { ens: any };
 
 interface PlaidLinkProps {
@@ -39,18 +39,23 @@ const PlaidLink = ({
   const { appwriteUser, loading, error } = useAppwriteUser(userId as string);
   const { setPlaidPortalOpen } = useAuthStore();
 
-  useEffect(() => {
-    const getLinkToken = async () => {
+  const debouncedGetLinkToken = useCallback(
+    debounce(async (appwriteUser) => {
       if (appwriteUser) {
         const data = await createLinkToken(appwriteUser as RequiredEnsUser);
         setToken(data?.linkToken);
       }
-    };
+    }, 300),
+    []
+  );
 
+  useEffect(() => {
     if (appwriteUser) {
-      getLinkToken();
+      debouncedGetLinkToken(appwriteUser);
     }
-  }, [appwriteUser]);
+
+    return () => debouncedGetLinkToken.cancel();
+  }, [appwriteUser, debouncedGetLinkToken]);
 
   const onSuccess = useCallback<PlaidLinkOnSuccess>(
     async (public_token: string) => {
@@ -112,7 +117,7 @@ const PlaidLink = ({
             width={24}
             height={24}
           />
-          <p className="hiddenl text-[16px] font-semibold text-black-2 xl:block">
+          <p className="hidden text-[16px] font-semibold text-black-2 xl:block">
             Connect bank
           </p>
         </Button>
