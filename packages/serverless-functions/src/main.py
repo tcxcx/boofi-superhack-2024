@@ -1,43 +1,52 @@
-import json
-from datetime import datetime
+from appwrite.client import Client
 
 def main(context):
-    try:
-        # Get payload from the request
-        payload = json.loads(context.req.payload)
-        user_id = payload.get('userId')
-        crypto_balances = payload.get('cryptoBalances', {})
+    client = (
+        Client()
+        .set_endpoint('https://cloud.appwrite.io/v1')
+        .set_project(context.env['APPWRITE_FUNCTION_PROJECT_ID'])
+        .set_key(context.env['APPWRITE_API_KEY'])
+    )
+
+    # Log the function invocation
+    context.log('Executing DeFi Potential Calculation function')
+
+    # Access the request data
+    if context.req.method == 'POST':
+        # Assuming the payload is sent in the request body
+        payload = context.req.body
+        
+        # Parse the payload
+        try:
+            user_id = payload.get('userId')
+            crypto_balances = payload.get('cryptoBalances', {})
+        except AttributeError:
+            return context.res.json({"error": "Invalid payload format"}, 400)
 
         context.log(f"Received user_id: {user_id}")
         context.log(f"Received crypto_balances: {crypto_balances}")
 
-        # Fetch user financial data
+        # Fetch user financial data (simulated for now)
         financial_data = fetch_user_data(context, user_id)
 
+        # Calculate DeFi potential
         result = calculate_defi_potential(financial_data, crypto_balances)
 
+        # Prepare and send the response
         output = {
             "userId": user_id,
             **result,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": context.req.time
         }
 
         context.log(f"Output: {output}")
         return context.res.json(output)
-
-    except json.JSONDecodeError as e:
-        context.error(f"Error decoding JSON: {e}")
-        return context.res.json({"error": "Invalid JSON payload"}, 400)
-    except Exception as e:
-        context.error(f"An error occurred: {str(e)}")
-        return context.res.json({"error": str(e)}, 500)
+    else:
+        return context.res.json({"error": "Method not allowed"}, 405)
 
 def fetch_user_data(context, user_id):
-    # In a real Appwrite function, you might use context.env to get environment variables
-    # For now, we'll simulate fetching data
-    # You would replace this with actual database querying logic
+    # Simulated data fetch - replace with actual database query
     context.log(f"Fetching data for user: {user_id}")
-    # Simulated data - replace with actual data fetching logic
     return {
         "bankAccounts": {
             "totalCurrentBalance": 50000  # Example balance
@@ -45,9 +54,6 @@ def fetch_user_data(context, user_id):
     }
 
 def calculate_defi_potential(financial_data, crypto_balances):
-    context.log(f"Financial data: {financial_data}")
-    context.log(f"Crypto balances: {crypto_balances}")
-
     bank_balance = financial_data.get('bankAccounts', {}).get('totalCurrentBalance', 0)
     total_crypto_balance = float(crypto_balances.get('totalBalanceUSD', 0))
     total_balance = bank_balance + total_crypto_balance
