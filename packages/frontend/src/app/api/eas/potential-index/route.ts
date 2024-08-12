@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { spawn } from "child_process";
-import path from "path";
 
 export async function POST(req: NextRequest): Promise<Response> {
-  // Explicitly type the return value
   const { userId, cryptoBalances } = await req.json();
 
   if (!userId) {
@@ -11,78 +8,35 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   console.log("Received userId:", userId);
-  console.log("Received cryptoBalances:", cryptoBalances);
-
-  const scriptPath = path.join(
-    process.cwd(),
-    "..",
-    "boofi-potential-index",
-    "defi_potential_algorithm.py"
+  console.log(
+    "Received cryptoBalances:",
+    JSON.stringify(cryptoBalances, null, 2)
   );
 
-  return new Promise((resolve) => {
-    const pythonProcess = spawn("conda", [
-      "run",
-      "-n",
-      "boofi-env",
-      "python",
-      scriptPath,
-      userId,
-      JSON.stringify(cryptoBalances || { totalBalanceUSD: 0 }),
-    ]);
+  // Appwrite function URL
+  const appwriteFunctionUrl = process.env.APPWRITE_FUNCTION_URL as string;
 
-    let outputData = "";
-    let errorData = "";
-
-    pythonProcess.stdout.on("data", (data) => {
-      outputData += data.toString();
+  try {
+    const response = await fetch(appwriteFunctionUrl, {
+      method: "POST",
+      body: JSON.stringify({ userId, cryptoBalances }),
     });
 
-    pythonProcess.stderr.on("data", (data) => {
-      errorData += data.toString();
-      console.error(`Python script error: ${data}`);
-    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-    pythonProcess.on("close", (code) => {
-      if (code !== 0) {
-        console.error("Python script error output:", errorData);
-        resolve(
-          NextResponse.json(
-            { error: "Error executing Python script", details: errorData },
-            { status: 500 }
-          )
-        );
-      } else {
-        try {
-          console.log("Script output data:", outputData);
-
-          const jsonOutput = JSON.parse(outputData);
-
-          if (
-            typeof jsonOutput.userId !== "string" ||
-            typeof jsonOutput.defiPotentialScore !== "number" ||
-            typeof jsonOutput.maxLoanAmount !== "number" ||
-            typeof jsonOutput.rationale !== "string" ||
-            typeof jsonOutput.timestamp !== "string"
-          ) {
-            throw new Error("Invalid output format from Python script");
-          }
-
-          resolve(NextResponse.json(jsonOutput));
-        } catch (error: any) {
-          console.error("Error parsing script output:", error);
-          resolve(
-            NextResponse.json(
-              {
-                error: "Error parsing script output",
-                details: error.message,
-                output: outputData,
-              },
-              { status: 500 }
-            )
-          );
-        }
-      }
-    });
-  });
+    const data = await response.json();
+    console.log(
+      "Response from Appwrite function:",
+      JSON.stringify(data, null, 2)
+    );
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error("Error calling Appwrite function:", error);
+    return NextResponse.json(
+      { error: "Error calling Appwrite function", details: error.message },
+      { status: 500 }
+    );
+  }
 }
