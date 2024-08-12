@@ -1,31 +1,18 @@
-from appwrite.client import Client
 import json
 
 def main(context):
-    client = (
-        Client()
-        .set_endpoint('https://cloud.appwrite.io/v1')
-        .set_project(context.env['APPWRITE_FUNCTION_PROJECT_ID'])
-        .set_key(context.env['APPWRITE_API_KEY'])
-    )
-
-    # Log the function invocation
     context.log('Executing DeFi Potential Calculation function')
 
     try:
-        # Access the request data
         if context.req.method == 'POST':
-            # The payload should already be a dictionary
             payload = context.req.body
 
-            # If payload is a string, try to parse it as JSON
             if isinstance(payload, str):
                 try:
                     payload = json.loads(payload)
                 except json.JSONDecodeError:
                     return context.res.json({"error": "Invalid JSON payload"}, 400)
 
-            # Extract data from payload
             user_id = payload.get('userId')
             crypto_balances = payload.get('cryptoBalances', {})
 
@@ -35,13 +22,9 @@ def main(context):
             context.log(f"Received user_id: {user_id}")
             context.log(f"Received crypto_balances: {crypto_balances}")
 
-            # Fetch user financial data (simulated for now)
             financial_data = fetch_user_data(context, user_id)
-
-            # Calculate DeFi potential
             result = calculate_defi_potential(financial_data, crypto_balances)
 
-            # Prepare and send the response
             output = {
                 "userId": user_id,
                 **result,
@@ -58,7 +41,6 @@ def main(context):
         return context.res.json({"error": "Internal server error"}, 500)
 
 def fetch_user_data(context, user_id):
-    # Simulated data fetch - replace with actual database query
     context.log(f"Fetching data for user: {user_id}")
     return {
         "bankAccounts": {
