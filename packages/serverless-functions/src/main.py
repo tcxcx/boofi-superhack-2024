@@ -1,24 +1,19 @@
 from appwrite.client import Client
 from appwrite.services.databases import Databases
-from dotenv import load_dotenv
-load_dotenv()
 import os
 import json
 import requests
 from datetime import datetime
 
-
 def fetch_user_data(user_id, client):
-    api_url = f"http://localhost:3000/api/eas/user-financial-data?userId={user_id}"
-    # api_url = f"http://boofi.xyz/api/eas/user-financial-data?userId={user_id}"
+    api_url = f"http://boofi.xyz/api/eas/user-financial-data?userId={user_id}"
     response = requests.get(api_url)
-    if response.status_code == 200:
+    if response.status_code == 200) {
         data = response.json()
         client.log(f"Fetched financial data: {data}")  # Debug print
         return data
-    else:
+    } else {
         raise Exception(f"Failed to fetch user data: {response.status_code}")
-
 
 def calculate_defi_potential(financial_data, crypto_balances, client):
     client.log(f"Financial data: {financial_data}")  # Debug print
@@ -50,7 +45,6 @@ def calculate_defi_potential(financial_data, crypto_balances, client):
         "rationale": rationale,
         'totalAttested': total_balance,
     }
-
 
 def main(context):
     # Initialize Appwrite client
