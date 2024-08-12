@@ -1,23 +1,22 @@
 from appwrite.client import Client
-from appwrite.services.logger import Logger
 import os
 import json
 import requests
 from datetime import datetime
 
-def fetch_user_data(user_id, logger):
+def fetch_user_data(user_id):
     api_url = f"http://boofi.xyz/api/eas/user-financial-data?userId={user_id}"
     response = requests.get(api_url)
     if response.status_code == 200:
         data = response.json()
-        logger.debug(f"Fetched financial data: {data}")  # Debug print
+        print(f"Fetched financial data: {data}")  # Debug print
         return data
     else:
         raise Exception(f"Failed to fetch user data: {response.status_code}")
 
-def calculate_defi_potential(financial_data, crypto_balances, logger):
-    logger.debug(f"Financial data: {financial_data}") 
-    logger.debug(f"Crypto balances: {crypto_balances}")  # Debug print
+def calculate_defi_potential(financial_data, crypto_balances):
+    print(f"Financial data: {financial_data}") 
+    print(f"Crypto balances: {crypto_balances}")  # Debug print
 
     bank_balance = financial_data['bankAccounts'].get('totalCurrentBalance', 0)
     total_crypto_balance = float(crypto_balances.get('totalBalanceUSD', 0))
@@ -60,24 +59,23 @@ def main(context):
         user_id = payload.get('userId')
         crypto_balances_str = payload.get('cryptoBalances', '{}')
 
-        logger = Logger(client)
-        logger.debug(f"Received user_id: {user_id}")
-        logger.debug(f"Received crypto_balances: {crypto_balances_str}")
+        print(f"Received user_id: {user_id}")
+        print(f"Received crypto_balances: {crypto_balances_str}")
 
         crypto_balances = json.loads(crypto_balances_str)
 
-        financial_data = fetch_user_data(user_id, logger)
-        result = calculate_defi_potential(financial_data, crypto_balances, logger)
+        financial_data = fetch_user_data(user_id)
+        result = calculate_defi_potential(financial_data, crypto_balances)
         output = {
             "userId": user_id,
             **result,
             "timestamp": datetime.now().isoformat()
         }
-        logger.debug(f"Output: {output}")
+        print(f"Output: {output}")
         return context.res.json(output)
     except json.JSONDecodeError as e:
-        logger.error(f"Error decoding JSON: {e}")
+        print(f"Error decoding JSON: {e}")
         return context.res.json({"error": "Invalid JSON payload"}, 400)
     except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
+        print(f"An error occurred: {str(e)}")
         return context.res.json({"error": str(e)}, 500)
