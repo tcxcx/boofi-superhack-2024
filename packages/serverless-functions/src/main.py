@@ -1,22 +1,23 @@
 from appwrite.client import Client
+from appwrite.services.logger import Logger
 import os
 import json
 import requests
 from datetime import datetime
 
-def fetch_user_data(user_id, client):
+def fetch_user_data(user_id, logger):
     api_url = f"http://boofi.xyz/api/eas/user-financial-data?userId={user_id}"
     response = requests.get(api_url)
     if response.status_code == 200:
         data = response.json()
-        client.log(f"Fetched financial data: {data}")  # Debug print
+        logger.debug(f"Fetched financial data: {data}")  # Debug print
         return data
     else:
         raise Exception(f"Failed to fetch user data: {response.status_code}")
 
-def calculate_defi_potential(financial_data, crypto_balances, client):
-    client.log(f"Financial data: {financial_data}") 
-    client.log(f"Crypto balances: {crypto_balances}")  # Debug print
+def calculate_defi_potential(financial_data, crypto_balances, logger):
+    logger.debug(f"Financial data: {financial_data}") 
+    logger.debug(f"Crypto balances: {crypto_balances}")  # Debug print
 
     bank_balance = financial_data['bankAccounts'].get('totalCurrentBalance', 0)
     total_crypto_balance = float(crypto_balances.get('totalBalanceUSD', 0))
@@ -53,28 +54,30 @@ def main(context):
           .set_key(os.environ["APPWRITE_API_KEY"]) \
     
     try:
-        # Access the raw request body and parse as JSON
-        payload = json.loads(context.req)
+        # Access the raw request body
+        raw_body = context.req.read().decode('utf-8')
+        payload = json.loads(raw_body)
         user_id = payload.get('userId')
         crypto_balances_str = payload.get('cryptoBalances', '{}')
 
-        client.log(f"Received user_id: {user_id}")
-        client.log(f"Received crypto_balances: {crypto_balances_str}")
+        logger = Logger(client)
+        logger.debug(f"Received user_id: {user_id}")
+        logger.debug(f"Received crypto_balances: {crypto_balances_str}")
 
         crypto_balances = json.loads(crypto_balances_str)
 
-        financial_data = fetch_user_data(user_id, client)
-        result = calculate_defi_potential(financial_data, crypto_balances, client)
+        financial_data = fetch_user_data(user_id, logger)
+        result = calculate_defi_potential(financial_data, crypto_balances, logger)
         output = {
             "userId": user_id,
             **result,
             "timestamp": datetime.now().isoformat()
         }
-        client.log(f"Output: {output}")
+        logger.debug(f"Output: {output}")
         return context.res.json(output)
     except json.JSONDecodeError as e:
-        client.log(f"Error decoding JSON: {e}")
+        logger.error(f"Error decoding JSON: {e}")
         return context.res.json({"error": "Invalid JSON payload"}, 400)
     except Exception as e:
-        client.log(f"An error occurred: {str(e)}")
+        logger.error(f"An error occurred: {str(e)}")
         return context.res.json({"error": str(e)}, 500)
