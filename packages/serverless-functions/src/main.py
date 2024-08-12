@@ -1,5 +1,6 @@
 import json
 import requests
+from datetime import datetime
 
 def main(context):
     context.log('Executing DeFi Potential Calculation function')
@@ -21,7 +22,7 @@ def main(context):
                 return context.res.json({"error": "userId is required"}, 400)
 
             context.log(f"Received user_id: {user_id}")
-            context.log(f"Received crypto_balances: {crypto_balances}")
+            context.log(f"Received crypto_balances: {json.dumps(crypto_balances, indent=2)}")
 
             financial_data = fetch_user_data(context, user_id)
             result = calculate_defi_potential(financial_data, crypto_balances)
@@ -29,10 +30,10 @@ def main(context):
             output = {
                 "userId": user_id,
                 **result,
-                "timestamp": context.req.time
+                "timestamp": datetime.now().isoformat()  # Correct way to get the current timestamp
             }
 
-            context.log(f"Output: {output}")
+            context.log(f"Output: {json.dumps(output, indent=2)}")
             return context.res.json(output)
         else:
             return context.res.json({"error": "Method not allowed"}, 405)
@@ -49,7 +50,7 @@ def fetch_user_data(context, user_id):
         response = requests.get(api_url)
         response.raise_for_status()  # Raises an HTTPError for bad responses
         data = response.json()
-        context.log(f"Fetched financial data: {data}")
+        context.log(f"Fetched financial data: {json.dumps(data, indent=2)}")
         return data
     except requests.RequestException as e:
         context.error(f"Failed to fetch user data: {str(e)}")
