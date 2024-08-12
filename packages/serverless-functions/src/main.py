@@ -46,14 +46,13 @@ def calculate_defi_potential(financial_data, crypto_balances):
 
 def main(context):
     try:
-        # Access the raw request body
-        raw_body = context.req.read().decode('utf-8')
-        payload = json.loads(raw_body)
+        # Access the request body directly from the context
+        payload = context.req.get_json()  # Use get_json() to parse the body
         user_id = payload.get('userId')
         crypto_balances_str = payload.get('cryptoBalances', '{}')
 
-        print(f"Received user_id: {user_id}")
-        print(f"Received crypto_balances: {crypto_balances_str}")
+        context.log(f"Received user_id: {user_id}")
+        context.log(f"Received crypto_balances: {crypto_balances_str}")
 
         crypto_balances = json.loads(crypto_balances_str)
 
@@ -64,11 +63,11 @@ def main(context):
             **result,
             "timestamp": datetime.now().isoformat()
         }
-        print(f"Output: {output}")
+        context.log(f"Output: {output}")
         return context.res.json(output)
     except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
+        context.error(f"Error decoding JSON: {e}")
         return context.res.json({"error": "Invalid JSON payload"}, 400)
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        context.error(f"An error occurred: {str(e)}")
         return context.res.json({"error": str(e)}, 500)
